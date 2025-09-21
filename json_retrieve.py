@@ -26,7 +26,6 @@ PREDICATE_WHITELIST = [
     "http://dbpedia.org/ontology/distributor",
     "http://dbpedia.org/ontology/country",
     "http://dbpedia.org/ontology/language",
-    "http://purl.org/dc/terms/subject",
     "http://dbpedia.org/ontology/abstract"  # abstract ovvero il testo
 ]
 ABSTRACT_URI = "http://dbpedia.org/ontology/abstract"
@@ -42,9 +41,27 @@ def get_first_paragraph(full_text):
 
 
 def get_short_name(uri_string):
-    if not isinstance(uri_string, str): return ""
+    """Converte un URI completo nel formato con prefisso (es. dbo:, dbr:)"""
+    if not isinstance(uri_string, str):
+        return ""
+
+    # Dizionario per mappare gli URI ai prefissi
+    uri_namespace_map = {
+        "http://dbpedia.org/resource/": "dbr:",
+        "http://dbpedia.org/ontology/": "dbo:",
+        "http://dbpedia.org/property/": "dbp:",
+    }
+
+    # Cerca il namespace corrispondente
+    for namespace_uri, prefix in uri_namespace_map.items():
+        if uri_string.startswith(namespace_uri):
+            local_name = uri_string[len(namespace_uri):]
+            return f"{prefix}{local_name}"
+
+    # Fallback: se non trova un namespace noto, restituisce solo il nome locale
     if uri_string.startswith("http://"):
         return uri_string.split('/')[-1]
+
     return uri_string
 
 
