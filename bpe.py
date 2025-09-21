@@ -1,8 +1,12 @@
 from tokenizers import Tokenizer
 from tokenizers.models import BPE
 from tokenizers.trainers import BpeTrainer
-from tokenizers.pre_tokenizers import Whitespace
+from tokenizers.pre_tokenizers import Whitespace,Split
 
+
+
+
+underscoreRemoval = True
 # inizializza un Tokenizer vuoto che userà il modello BPE
 # il `unk_token` è il token che verrà usato se incontra qualcosa di sconosciuto
 tokenizer = Tokenizer(BPE(unk_token="<UNK>"))
@@ -10,7 +14,9 @@ corpus_filename = "corpus.txt"
 
 # imposta un "pre-tokenizer" che divide il testo in parole basandosi sugli spazi
 tokenizer.pre_tokenizer = Whitespace()
-
+#TODO:Add a pretokenizer even for _
+if underscoreRemoval:
+    pretokenizer = Split(pattern="_", behavior="removed")
 # limitazione della dimensione del vocabolario
 VOCAB_SIZE = 32000
 
