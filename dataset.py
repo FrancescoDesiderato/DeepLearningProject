@@ -21,9 +21,6 @@ class NanoSocratesDataset(Dataset):
         input_encoding = self.tokenizer.encode(input_text)
         target_encoding = self.tokenizer.encode(target_text)
 
-        input_encoding = input_encoding.ids[:512]
-        target_encoding = target_encoding.ids[:512]
-
         return {
             "input_ids": torch.tensor(input_encoding.ids, dtype=torch.long),
             "labels": torch.tensor(target_encoding.ids, dtype=torch.long)
