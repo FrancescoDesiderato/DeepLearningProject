@@ -12,7 +12,7 @@ with open(dataset_filename, "r", encoding="utf-8") as f:
 tokenizer_path = "tokenizer.json"
 tokenizer = Tokenizer.from_file(tokenizer_path)
 
-MAX_LENGTH = 256
+MAX_LENGTH = 512
 
 processed_samples = []
 
@@ -34,13 +34,13 @@ for item in original_dataset:
         continue
 
     # Text2RDF
-    input_text1 = f"{text} <Text2RDF>"
+    input_text1 = f"<Text2RDF> {text}"
     target_text1 = " ".join([serialize_triple(t) for t in triples])
     if target_text1:
         processed_samples.append({"input": input_text1, "target": target_text1})
 
     # RDF2Text
-    input_text2 = f"{' '.join([serialize_triple(t) for t in triples])} <RDF2Text>"
+    input_text2 = f"<RDF2Text> {' '.join([serialize_triple(t) for t in triples])}"
     target_text2 = text
     if input_text2:
         processed_samples.append({"input": input_text2, "target": target_text2})
@@ -73,29 +73,23 @@ for item in original_dataset:
                 {"input": input_text3_double, "target": target_text3_double})
 
         # RDF Completion 2 (Continuation)
-        if len(triples) > 1:
+        #TODO capire se va bene
+        if len(triples) == 1:
             for i in range(len(triples) - 1):
-                input_text4 = f"{serialize_triple(triples[i])} <CONTINUERDF>"
+                input_text4 = f"<CONTINUERDF> {serialize_triple(triples[i])}"
                 target_text4 = serialize_triple(triples[i + 1])
                 processed_samples.append({"input": input_text4, "target": target_text4})
+        else:
+            available_indices = list(range(len(triples)))
+            context_idx = random.choice(available_indices)
+            target_candidates = [idx for idx in available_indices if idx != context_idx]
+            target_idx = random.choice(target_candidates)
 
-        #TODO valutare se abbia senso generare esempi randomici di questo tipo
+            input_text4_random = f"<CONTINUERDF> {serialize_triple(triples[context_idx])}"
+            target_text4_random = serialize_triple(triples[target_idx])
+            processed_samples.append(
+                {"input": input_text4_random, "target": target_text4_random})
 
-        '''    
-
-        if len(triples) >= 3:
-            for _ in range(min(2, len(triples) - 1)):  # Genera max 2 esempi per dataset item
-                available_indices = list(range(len(triples)))
-                context_idx = random.choice(available_indices)
-                target_candidates = [idx for idx in available_indices if idx != context_idx]
-                target_idx = random.choice(target_candidates)
-
-                input_text4_random = f"{serialize_triple(triples[context_idx])} <CONTINUERDF>"
-                target_text4_random = serialize_triple(triples[target_idx])
-                processed_samples.append(
-                    {"input": input_text4_random, "target": target_text4_random})
-                    
-        '''
 
 print(f"Creati {len(processed_samples)} esempi di addestramento totali.")
 print("\n--- Esempi del dataset formattato ---")
