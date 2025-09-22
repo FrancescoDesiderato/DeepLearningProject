@@ -20,7 +20,7 @@ dbpedia_endpoint_url = "https://dbpedia.org/sparql"
 sparql = SPARQLWrapper(dbpedia_endpoint_url)
 sparql.setReturnFormat(JSON)
 
-input_filename = "film_uris.txt"
+input_filename = "../film_uris.txt"
 with open(input_filename, "r", encoding="utf-8") as f:
     film_uris = [line.strip() for line in f if line.strip()]
 
@@ -119,7 +119,7 @@ for i, film_uri in enumerate(tqdm(film_uris, desc="Creando il dataset finale")):
         print(f"\nErrore durante il recupero di {film_uri}: {e}")
 
 # salvataggio in JSON
-output_filename = "final_paired_dataset.json"
+output_filename = "../final_paired_dataset.json"
 with open(output_filename, "w", encoding="utf-8") as f:
     json.dump(final_dataset, f, indent=2, ensure_ascii=False)
 
