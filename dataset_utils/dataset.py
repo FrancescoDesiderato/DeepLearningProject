@@ -1,9 +1,11 @@
 import torch
-from torch.utils.data import Dataset
+from tokenizers import Tokenizer
+from torch.utils.data import Dataset, DataLoader
 import pandas as pd
 
 class NanoSocratesDataset(Dataset):
     def __init__(self, samples, tokenizer, max_length):
+        super().__init__()
         self.samples = samples
         self.tokenizer = tokenizer
         self.max_length = max_length
@@ -58,19 +60,32 @@ class DataCollator:
         }
 
 
-class CSVDataset(Dataset):
-    def __init__(self, csv_file, transform=None):
-        self.data = pd.read_csv(csv_file)
-        self.transform = transform
+def dataLoaderFromCSV(csv_file,tokenizer_path,MAX_LENGTH,BATCH_SIZE):
+    data = pd.read_csv(csv_file)
+    tokenizer = Tokenizer.from_file(tokenizer_path)
+    transformed_data = data[['input', 'target']].to_dict('records')
+    data = NanoSocratesDataset(transformed_data, tokenizer, MAX_LENGTH)
 
-    def __len__(self):
-        return len(self.data)
+    data_collator = DataCollator(tokenizer)
+    train_ds, val_ds, test_ds = torch.utils.data.random_split(data, [0.8, 0.1, 0.1])
 
-    def __getitem__(self, idx):
-        text = self.data.iloc[idx, 0]   # prima colonna
-        label = self.data.iloc[idx, 1]  # seconda colonna
+    train_dataloader = DataLoader(
+        train_ds,
+        batch_size=BATCH_SIZE,
+        shuffle=True,
+        collate_fn=data_collator
+    )
+    evaluation_dataloader = DataLoader(
+        val_ds,
+        batch_size=BATCH_SIZE,
+        shuffle=True,
+        collate_fn=data_collator
+    )
 
-        if self.transform:
-            text = self.transform(text)
-
-        return text, torch.tensor(label, dtype=torch.long)
+    test_dataloader = DataLoader(
+        test_ds,
+        batch_size=BATCH_SIZE,
+        shuffle=True,
+        collate_fn=data_collator
+    )
+    return train_dataloader, evaluation_dataloader, test_dataloader

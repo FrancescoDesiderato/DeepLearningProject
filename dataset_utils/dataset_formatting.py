@@ -1,6 +1,7 @@
 import json
 import random
 import pandas as pd
+import torch
 from tokenizers import Tokenizer
 from torch.utils.data import DataLoader
 from dataset_utils.dataset import NanoSocratesDataset,DataCollator
@@ -113,12 +114,27 @@ class DatasetFormatting:
         train_dataset = NanoSocratesDataset(processed_samples, tokenizer, self.MAX_LENGTH)
         data_collator = DataCollator(tokenizer)
 
+        train_ds, val_ds, test_ds = torch.utils.data.random_split(train_dataset, [0.8, 0.1, 0.1])
+
         train_dataloader = DataLoader(
-            train_dataset,
+            train_ds,
+            batch_size=self.BATCH_SIZE,
+            shuffle=True,
+            collate_fn=data_collator
+        )
+        evaluation_dataloader = DataLoader(
+            val_ds,
             batch_size=self.BATCH_SIZE,
             shuffle=True,
             collate_fn=data_collator
         )
 
-        return train_dataloader
+        test_dataloader = DataLoader(
+            test_ds,
+            batch_size=self.BATCH_SIZE,
+            shuffle=True,
+            collate_fn=data_collator
+        )
+
+        return train_dataloader, evaluation_dataloader, test_dataloader
 

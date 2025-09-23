@@ -30,7 +30,7 @@ class DatasetConstruction:
         corpusClass.compute()
 
         #4-BPE
-        tokenizer_path = "dataset_utils/outputs/tokenizer.json"
+        tokenizer_path = "tokenizer.json"
         bpeCustomClass = BPECustom(self.underscoreRemoval, corpus_filename, tokenizer_path, self.VOCAB_SIZE)
         bpeCustomClass.compute()
 
