@@ -60,7 +60,7 @@ class DataCollator:
         }
 
 
-def dataLoaderFromCSV(csv_file,tokenizer_path,MAX_LENGTH,BATCH_SIZE):
+def dataLoaderFromCSV(csv_file, tokenizer_path, MAX_LENGTH, BATCH_SIZE):
     data = pd.read_csv(csv_file)
     tokenizer = Tokenizer.from_file(tokenizer_path)
     transformed_data = data[['input', 'target']].to_dict('records')
@@ -75,6 +75,7 @@ def dataLoaderFromCSV(csv_file,tokenizer_path,MAX_LENGTH,BATCH_SIZE):
         shuffle=True,
         collate_fn=data_collator
     )
+
     evaluation_dataloader = DataLoader(
         val_ds,
         batch_size=BATCH_SIZE,
@@ -88,4 +89,5 @@ def dataLoaderFromCSV(csv_file,tokenizer_path,MAX_LENGTH,BATCH_SIZE):
         shuffle=True,
         collate_fn=data_collator
     )
+
     return train_dataloader, evaluation_dataloader, test_dataloader

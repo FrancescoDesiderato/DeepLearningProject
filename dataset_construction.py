@@ -32,11 +32,11 @@ class DatasetConstruction:
         #4-BPE
         tokenizer_path = "tokenizer.json"
         bpeCustomClass = BPECustom(self.underscoreRemoval, corpus_filename, tokenizer_path, self.VOCAB_SIZE)
-        bpeCustomClass.compute()
+        tokenizer = bpeCustomClass.compute()
 
         #5-DATASET
         csv_filename = "processed_samples.csv"
         datasetFormattingClass =DatasetFormatting(output_filename_json,tokenizer_path,csv_filename ,self.MAX_LENGTH, self.BATCH_SIZE)
-        train_dataset = datasetFormattingClass.compute()
+        train_dataset, val_dataset, test_dataset = datasetFormattingClass.compute()
 
-        return train_dataset
+        return tokenizer, train_dataset, val_dataset, test_dataset

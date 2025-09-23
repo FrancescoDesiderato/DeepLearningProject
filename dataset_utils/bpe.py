@@ -49,3 +49,5 @@ class BPECustom:
 
         print(f"Tokenizzatore salvato con successo in '{self.tokenizer_path}'.")
 
+        return tokenizer
+
