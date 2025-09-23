@@ -1,0 +1,5 @@
+python==3.11
+torch
+SPARQLWrapper
+tqdm
+transformers

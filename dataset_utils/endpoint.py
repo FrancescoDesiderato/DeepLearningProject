@@ -70,7 +70,6 @@ class Endpoint:
         print(f"\nEstrazione terminata. Numero totale di URI di film raccolti: {len(all_film_uris)}")
 
         # Salvataggio degli URI in un file di testo
-        #output_filename = "film_uris.txt"
         with open(self.output_filename, "w", encoding="utf-8") as f:
             for uri in all_film_uris:
                 f.write(uri + "\n")
