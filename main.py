@@ -17,4 +17,4 @@ if __name__ == '__main__':
         dataset = DatasetConstruction(page_size, test_enable, underscoreRemoval, VOCAB_SIZE, MAX_LENGTH, BATCH_SIZE)
         train_dataset = dataset.pipeline()
 
-    #TODO:Make Model
+    # TODO:Make Model
