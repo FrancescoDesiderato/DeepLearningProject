@@ -3,9 +3,6 @@ from tokenizers.models import BPE
 from tokenizers.trainers import BpeTrainer
 from tokenizers.pre_tokenizers import Whitespace,Split
 
-
-
-
 underscoreRemoval = True
 # inizializza un Tokenizer vuoto che userà il modello BPE
 # il `unk_token` è il token che verrà usato se incontra qualcosa di sconosciuto
