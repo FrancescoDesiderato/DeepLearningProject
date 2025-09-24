@@ -90,4 +90,4 @@ def dataLoaderFromCSV(csv_file, tokenizer_path, MAX_LENGTH, BATCH_SIZE):
         collate_fn=data_collator
     )
 
-    return train_dataloader, evaluation_dataloader, test_dataloader
+    return tokenizer,train_dataloader, evaluation_dataloader, test_dataloader

@@ -23,10 +23,8 @@ class DatasetFormatting:
     def compute(self):
         with open(self.dataset_filename, "r", encoding="utf-8") as f:
             original_dataset = json.load(f)
+
         tokenizer = Tokenizer.from_file(self.tokenizer_path)
-
-
-
         processed_samples = []
 
         print("Inizio la formattazione degli esempi per i 4 task...")
