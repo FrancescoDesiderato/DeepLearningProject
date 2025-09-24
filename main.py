@@ -21,6 +21,8 @@ NUM_ENCODER_LAYERS = 4      # Numero di layer nell'encoder
 NUM_DECODER_LAYERS = 4      # Numero di layer nel decoder
 FFN_HID_DIM = 512           # Dimensione del layer nascosto nella Feed-Forward Network
 DROPOUT = 0.1
+model_training = False
+weight_path = "nanosocrates_transformer.pkl"
 
 if __name__ == '__main__':
     if dataset_created:
@@ -30,30 +32,46 @@ if __name__ == '__main__':
         tokenizer, train_dataset, val_dataset, test_dataset = dataset.pipeline()
         PAD_IDX = tokenizer.token_to_id("<PAD>")
 
-        model = NanoSocratesTransformer(
-            vocab_size=VOCAB_SIZE,
-            d_model=D_MODEL,
-            n_heads=N_HEADS,
-            num_encoder_layers=NUM_ENCODER_LAYERS,
-            num_decoder_layers=NUM_DECODER_LAYERS,
-            ffn_hid_dim=FFN_HID_DIM
-        )
-        # Informa il layer di embedding quale ID è per il padding
-        model.embedding.padding_idx = PAD_IDX
+        if model_training:
+            model = NanoSocratesTransformer(
+                vocab_size=VOCAB_SIZE,
+                d_model=D_MODEL,
+                n_heads=N_HEADS,
+                num_encoder_layers=NUM_ENCODER_LAYERS,
+                num_decoder_layers=NUM_DECODER_LAYERS,
+                ffn_hid_dim=FFN_HID_DIM
+            )
+            # Informa il layer di embedding quale ID è per il padding
+            model.embedding.padding_idx = PAD_IDX
 
-        # Sposta il modello sulla GPU se disponibile
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        model.to(device)
+            # Sposta il modello sulla GPU se disponibile
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            model.to(device)
 
-        train_model(model=model,
-                    train_loader=train_dataset,
-                    val_loader=val_dataset,
-                    VOCAB_SIZE=VOCAB_SIZE,
-                    num_epochs=10,
-                    device=device)
+            train_model(model=model,
+                        train_loader=train_dataset,
+                        val_loader=val_dataset,
+                        VOCAB_SIZE=VOCAB_SIZE,
+                        num_epochs=10,
+                        device=device)
 
-        # Salva il modello addestrato
-        torch.save(model.state_dict(), "nanosocrates_transformer.pkl")
+            # Salva il modello addestrato
+            torch.save(model.state_dict(), "nanosocrates_transformer.pkl")
+
+        else:
+            model = NanoSocratesTransformer(
+                vocab_size=VOCAB_SIZE,
+                d_model=D_MODEL,
+                n_heads=N_HEADS,
+                num_encoder_layers=NUM_ENCODER_LAYERS,
+                num_decoder_layers=NUM_DECODER_LAYERS,
+                ffn_hid_dim=FFN_HID_DIM
+            )
+            # Informa il layer di embedding quale ID è per il padding
+            model.embedding.padding_idx = PAD_IDX
+            model.load_state_dict(torch.load(weight_path, weights_only=True))
+
+
 
 
 
