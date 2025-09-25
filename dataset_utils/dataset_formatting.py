@@ -106,7 +106,7 @@ class DatasetFormatting:
 
 
         df = pd.DataFrame(processed_samples)
-        df.to_csv(self.csv_filename, index=False, encoding='utf-8', columns=["task","input", "target"])
+        df.to_csv(self.csv_filename, index=False, encoding='utf-8', columns=["task", "input", "target"])
         print(f"Dataset salvato come CSV: {self.csv_filename}")
 
         train_dataset = NanoSocratesDataset(processed_samples, tokenizer, self.MAX_LENGTH)

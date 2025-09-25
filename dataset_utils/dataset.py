@@ -39,6 +39,7 @@ class DataCollator:
         # batch è una lista di dizionari, es: [{'input_ids': tensor, 'labels': tensor}, ...]
 
         # Separiamo gli input e i target
+        task_ids_list = [item['task'] for item in batch]
         input_ids_list = [item['input_ids'] for item in batch]
         labels_list = [item['labels'] for item in batch]
 
@@ -56,6 +57,7 @@ class DataCollator:
         attention_mask = (input_ids_padded != self.pad_token_id).long()
 
         return {
+            'task': task_ids_list,
             'input_ids': input_ids_padded,
             'attention_mask': attention_mask,
             'labels': labels_padded
@@ -65,7 +67,7 @@ class DataCollator:
 def dataLoaderFromCSV(csv_file, tokenizer_path, MAX_LENGTH, BATCH_SIZE):
     data = pd.read_csv(csv_file)
     tokenizer = Tokenizer.from_file(tokenizer_path)
-    transformed_data = data[['input', 'target']].to_dict('records')
+    transformed_data = data[['task', 'input', 'target']].to_dict('records')
     data = NanoSocratesDataset(transformed_data, tokenizer, MAX_LENGTH)
 
     data_collator = DataCollator(tokenizer)
@@ -92,4 +94,4 @@ def dataLoaderFromCSV(csv_file, tokenizer_path, MAX_LENGTH, BATCH_SIZE):
         collate_fn=data_collator
     )
 
-    return tokenizer,train_dataloader, evaluation_dataloader, test_dataloader
+    return tokenizer, train_dataloader, evaluation_dataloader, test_dataloader
