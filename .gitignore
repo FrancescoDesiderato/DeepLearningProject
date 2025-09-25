@@ -209,3 +209,4 @@ __marimo__/
 .idea
 dataset_utils/outputs/
 nanosocrates_transformer.pkl
+processed_samples.csv

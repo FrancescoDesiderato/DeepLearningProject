@@ -2,7 +2,7 @@ from dataset_construction import DatasetConstruction
 from dataset_utils.dataset import dataLoaderFromCSV
 from model import NanoSocratesTransformer
 import torch
-from utils.train import train_model, test_model
+from utils.train import *
 
 page_size = 5000            # Max number of pages
 test_enable = True          # Toy Dataset Flag
@@ -15,8 +15,9 @@ csv_file = "processed_samples.csv"
 tokenizer_path = "tokenizer.json"
 
 dataset_created = True     # Set to TRUE if you have the csv data
-test_flag = True            # Set to TRUE if you want to test
-model_training = False      # Set to TRUE if you need to train the model, FALSE if you already have the weights
+overfit_test = True      # Set to TRUE if you want to overfit on a small dataset
+test_flag = False            # Set to TRUE if you want to test
+model_training = True      # Set to TRUE if you need to train the model, FALSE if you already have the weights
 
 D_MODEL = 512               # Dimensione nascosta (embedding dimension)
 N_HEADS = 8                 # Numero di teste di attenzione (deve dividere D_MODEL)
@@ -52,6 +53,12 @@ if __name__ == '__main__':
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         model.to(device)
 
+        if overfit_test:
+            sanity_passed = overfit_single_batch(model, train_dataset, device, VOCAB_SIZE)
+            if not sanity_passed:
+                print("Sanity check fallito.")
+                exit(1)
+
         train_model(model=model,
                     train_loader=train_dataset,
                     val_loader=val_dataset,
@@ -79,7 +86,7 @@ if __name__ == '__main__':
     #test phase
     if test_flag:
         predictions = test_model(model, test_dataset,device, tokenizer)
-        print(predictions)
+        print_test_results(predictions)
 
 
 
