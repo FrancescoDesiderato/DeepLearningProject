@@ -3,3 +3,4 @@ torch
 SPARQLWrapper
 tqdm
 transformers
+evaluate

@@ -113,12 +113,12 @@ def test_model(model, test_loader, device, tokenizer):
         all_tasks, all_targets, all_predictions
     )
 
-    return first_task, second_task, third_task, fourth_task
+    return first_task, second_task, third_task, fourth_task,all_predictions
 
 
 def print_test_results(results):
     """Stampa i risultati del test in formato leggibile"""
-    first_task, second_task, third_task, fourth_task = results
+    first_task, second_task, third_task, fourth_task,all_predictions = results
 
     print("\n" + "=" * 60)
     print("RISULTATI DEL TEST")
@@ -165,6 +165,9 @@ def print_test_results(results):
         print("\nCONTINUERDF: Non presente nel dataset di test")
 
     print("\n" + "=" * 60)
+
+    print(all_predictions)
+
 
 
 def overfit_single_batch(model, train_loader, device, VOCAB_SIZE, num_iterations=1000):

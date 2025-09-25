@@ -8,23 +8,23 @@ page_size = 5000            # Max number of pages
 test_enable = True          # Toy Dataset Flag
 underscoreRemoval = True    # The Tokenizer breaks word every _ too
 VOCAB_SIZE = 32000          # Max Vocabulary Size
-MAX_LENGTH = 512            # Max Seq length
-BATCH_SIZE = 8              # Batch Size for Training
+MAX_LENGTH = 256            # Max Seq length
+BATCH_SIZE = 64              # Batch Size for Training
 
 csv_file = "processed_samples.csv"
 tokenizer_path = "tokenizer.json"
 
 dataset_created = True     # Set to TRUE if you have the csv data
-overfit_test = True      # Set to TRUE if you want to overfit on a small dataset
-test_flag = False            # Set to TRUE if you want to test
-model_training = True      # Set to TRUE if you need to train the model, FALSE if you already have the weights
+overfit_test = False      # Set to TRUE if you want to overfit on a small dataset
+test_flag = True            # Set to TRUE if you want to test
+model_training = False      # Set to TRUE if you need to train the model, FALSE if you already have the weights
 
-D_MODEL = 512               # Dimensione nascosta (embedding dimension)
-N_HEADS = 8                 # Numero di teste di attenzione (deve dividere D_MODEL)
+D_MODEL = 256               # Dimensione nascosta (embedding dimension)
+N_HEADS = 4                 # Numero di teste di attenzione (deve dividere D_MODEL)
 NUM_ENCODER_LAYERS = 4      # Numero di layer nell'encoder
 NUM_DECODER_LAYERS = 4      # Numero di layer nel decoder
-FFN_HID_DIM = 512           # Dimensione del layer nascosto nella Feed-Forward Network
-DROPOUT = 0.1
+FFN_HID_DIM = 256           # Dimensione del layer nascosto nella Feed-Forward Network
+DROPOUT = 0.3
 weight_path = "nanosocrates_transformer.pkl"
 
 
@@ -81,7 +81,7 @@ if __name__ == '__main__':
         )
         # Informa il layer di embedding quale ID è per il padding
         model.embedding.padding_idx = PAD_IDX
-        model.load_state_dict(torch.load(weight_path, weights_only=True))
+        model.load_state_dict(torch.load(weight_path, weights_only=True, map_location=device))
 
     #test phase
     if test_flag:
