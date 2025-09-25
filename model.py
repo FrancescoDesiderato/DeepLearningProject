@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import math
-from positional_encoding import PositionalEncoding
+from utils.positional_encoding import PositionalEncoding
 
 class NanoSocratesTransformer(nn.Module):
     def __init__(self,

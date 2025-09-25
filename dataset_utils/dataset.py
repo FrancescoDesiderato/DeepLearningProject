@@ -17,6 +17,7 @@ class NanoSocratesDataset(Dataset):
 
     def __getitem__(self, idx):
         sample = self.samples[idx]
+        task = sample["task"]
         input_text = sample["input"]
         target_text = sample["target"]
 
@@ -24,6 +25,7 @@ class NanoSocratesDataset(Dataset):
         target_encoding = self.tokenizer.encode(target_text)
 
         return {
+            "task": task,
             "input_ids": torch.tensor(input_encoding.ids, dtype=torch.long),
             "labels": torch.tensor(target_encoding.ids, dtype=torch.long)
         }

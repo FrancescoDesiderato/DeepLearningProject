@@ -2,7 +2,7 @@ from dataset_construction import DatasetConstruction
 from dataset_utils.dataset import dataLoaderFromCSV
 from model import NanoSocratesTransformer
 import torch
-from train import train_model, test_model
+from utils.train import train_model, test_model
 
 page_size = 5000            # Max number of pages
 test_enable = True          # Toy Dataset Flag

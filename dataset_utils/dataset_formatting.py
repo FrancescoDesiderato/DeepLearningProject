@@ -40,13 +40,13 @@ class DatasetFormatting:
             input_text1 = f"<Text2RDF> {text}"
             target_text1 = " ".join([serialize_triple(t) for t in triples])
             if target_text1:
-                processed_samples.append({"input": input_text1, "target": target_text1})
+                processed_samples.append({"task":"Text2RDF","input": input_text1, "target": target_text1})
 
             # RDF2Text
             input_text2 = f"<RDF2Text> {' '.join([serialize_triple(t) for t in triples])}"
             target_text2 = text
             if input_text2:
-                processed_samples.append({"input": input_text2, "target": target_text2})
+                processed_samples.append({"task":"RDF2Text","input": input_text2, "target": target_text2})
 
             # RDF Completion 1 (Masking)
             # TODO capire se abbia senso considerare la probabilità oppure fare direttamente due esempi per tripla
@@ -61,7 +61,7 @@ class DatasetFormatting:
                 input_text3_single = serialize_triple(masked_triple_single)
                 target_text3_single = serialize_triple(triple)
                 processed_samples.append(
-                    {"input": input_text3_single, "target": target_text3_single})
+                    {"task":"MASK","input": input_text3_single, "target": target_text3_single})
 
                 # maschera due componenti
                 if random.random() < 0.3 and len(components) >= 2:
@@ -73,7 +73,7 @@ class DatasetFormatting:
                     input_text3_double = serialize_triple(masked_triple_double)
                     target_text3_double = serialize_triple(triple)
                     processed_samples.append(
-                        {"input": input_text3_double, "target": target_text3_double})
+                        {"task":"MASK","input": input_text3_double, "target": target_text3_double})
 
                 # RDF Completion 2 (Continuation)
                 #TODO capire se va bene
@@ -81,7 +81,7 @@ class DatasetFormatting:
                     for i in range(len(triples) - 1):
                         input_text4 = f"<CONTINUERDF> {serialize_triple(triples[i])}"
                         target_text4 = serialize_triple(triples[i + 1])
-                        processed_samples.append({"input": input_text4, "target": target_text4})
+                        processed_samples.append({"task":"CONTINUERDF","input": input_text4, "target": target_text4})
                 else:
                     available_indices = list(range(len(triples)))
                     context_idx = random.choice(available_indices)
@@ -91,7 +91,7 @@ class DatasetFormatting:
                     input_text4_random = f"<CONTINUERDF> {serialize_triple(triples[context_idx])}"
                     target_text4_random = serialize_triple(triples[target_idx])
                     processed_samples.append(
-                        {"input": input_text4_random, "target": target_text4_random})
+                        {"task":"CONTINUERDF","input": input_text4_random, "target": target_text4_random})
 
 
         print(f"Creati {len(processed_samples)} esempi di addestramento totali.")
@@ -106,7 +106,7 @@ class DatasetFormatting:
 
 
         df = pd.DataFrame(processed_samples)
-        df.to_csv(self.csv_filename, index=False, encoding='utf-8', columns=["input", "target"])
+        df.to_csv(self.csv_filename, index=False, encoding='utf-8', columns=["task","input", "target"])
         print(f"Dataset salvato come CSV: {self.csv_filename}")
 
         train_dataset = NanoSocratesDataset(processed_samples, tokenizer, self.MAX_LENGTH)
@@ -129,7 +129,7 @@ class DatasetFormatting:
 
         test_dataloader = DataLoader(
             test_ds,
-            batch_size=self.BATCH_SIZE,
+            batch_size=1,
             shuffle=True,
             collate_fn=data_collator
         )

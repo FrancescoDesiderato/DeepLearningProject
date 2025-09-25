@@ -1,5 +1,8 @@
 import torch
 
+from utils.metrics_calc import metrics_calculation
+
+
 def train_model(model, train_loader, val_loader, num_epochs, device, VOCAB_SIZE):
 
     # --- Test di Sanità Mentale (Sanity Check) ---
@@ -77,7 +80,9 @@ def test_model(model, test_loader, device, tokenizer):
     model.eval()
     test_text = []
     with torch.no_grad():
+        # Ricordiamo che abbiamo un solo batch in test
         for batch in test_loader:
+            tsk = batch['task'] # task del testo
             src = batch['input_ids'].transpose(0, 1).to(device)
             tgt = batch['labels'].transpose(0, 1).to(device)
 
@@ -93,7 +98,10 @@ def test_model(model, test_loader, device, tokenizer):
             #TODO: Temperature e quindi considerare le k migliori
             pred_ids = output.argmax(dim=-1)  # (T-1, B) ritorno solo la parola con prob più alta
             pred_decoded = [tokenizer.decode(seq.tolist(),skip_special_tokens=True) for seq in pred_ids] # Ritrasformiamo in testo per poter fare le metriche
-            test_text.append(pred_decoded)
+            test_text.append(pred_decoded) # serve per verificare l'output del modello
+
+            first_task,second_task,third_task_fourth_task = metrics_calculation(tsk,tgt_output_decoded,pred_decoded)
+
 
     return test_text
 
