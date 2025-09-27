@@ -1,11 +1,13 @@
+
+from transformers import PreTrainedTokenizerFast
+
 from dataset_construction import DatasetConstruction
 from dataset_utils.dataset import dataLoaderFromCSV
 from model import NanoSocratesTransformer
 import torch
 from utils.train import *
 from utils.evaluation import evaluate_tasks, run_test_evaluation
-from tqdm import tqdm
-import time
+
 
 page_size = 5000            # Max number of pages
 test_enable = True          # Toy Dataset Flag
@@ -13,7 +15,7 @@ underscoreRemoval = True    # The Tokenizer breaks word every _ too
 VOCAB_SIZE = 32000          # Max Vocabulary Size
 MAX_LENGTH = 256            # Max Seq length
 BATCH_SIZE = 64              # Batch Size for Training
-NUM_EPOCHS = 100            # Number of Epochs for Training
+NUM_EPOCHS = 5            # Number of Epochs for Training
 
 csv_file = "processed_samples.csv"
 tokenizer_path = "tokenizer.json"
@@ -42,18 +44,19 @@ if __name__ == '__main__':
         PAD_IDX = tokenizer.token_to_id("<PAD>")
 
     # Debug tokenizer
-    sample_text = "dbr :' If Only ' Jim dbo : director dbr : Jacques Jaccard"
+    sample_text = "<SOS> <SOT> <SUBJ> dbr :' If Only ' Jim <PRED> dbo : director <OBJ> dbr : Jacques Jaccard <EOT> <EOS>"
+    tokenizer = PreTrainedTokenizerFast(tokenizer_file=tokenizer_path)
     tokens = tokenizer.encode(sample_text)
     print(f"Original: {sample_text}")
-    print(f"Tokens: {tokens.tokens}")
-    print(f"Decoded: {tokenizer.decode(tokens.ids)}")
+    print(f"Tokens: {tokens}")
+    print(f"Decoded: {tokenizer.decode(tokens, skip_special_tokens=False)}")
 
     # Sposta il modello sulla GPU se disponibile
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     if model_training:
         model = NanoSocratesTransformer(
-            vocab_size=tokenizer.get_vocab_size(),
+            vocab_size=tokenizer.vocab_size,
             d_model=D_MODEL,
             n_heads=N_HEADS,
             num_encoder_layers=NUM_ENCODER_LAYERS,
@@ -90,7 +93,7 @@ if __name__ == '__main__':
     else:
         # Carica modello pre-addestrato
         model = NanoSocratesTransformer(
-            vocab_size=tokenizer.get_vocab_size(),
+            vocab_size=tokenizer.vocab_size,
             d_model=D_MODEL,
             n_heads=N_HEADS,
             num_encoder_layers=NUM_ENCODER_LAYERS,

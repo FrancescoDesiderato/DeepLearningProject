@@ -8,9 +8,9 @@ def greedy_decode(model, src, tokenizer, max_len=128, device='cuda'):
     """
     model.eval()
 
-    sos_id = tokenizer.token_to_id("<SOS>")
-    eos_id = tokenizer.token_to_id("<EOS>")
-    pad_id = tokenizer.token_to_id("<PAD>")
+    sos_id = tokenizer.convert_tokens_to_ids("<SOS>")
+    eos_id = tokenizer.convert_tokens_to_ids("<EOS>")
+    pad_id = tokenizer.convert_tokens_to_ids("<PAD>")
 
     with torch.no_grad():
         # src shape: [src_len, batch_size]
@@ -47,7 +47,7 @@ def greedy_decode(model, src, tokenizer, max_len=128, device='cuda'):
             if pad_id is not None:
                 tokens = [t for t in tokens if t != pad_id]
 
-            text = tokenizer.decode(tokens) if tokens else ""
+            text = tokenizer.decode(tokens, skip_special_tokens=False) if tokens else ""
             results.append(text)
 
         return results
@@ -59,7 +59,7 @@ def run_validation(model, val_loader, tokenizer, device, num_examples=5):
     model.eval()
     val_loss = 0
     criterion = torch.nn.CrossEntropyLoss(ignore_index=model.embedding.padding_idx)
-    actual_vocab_size = tokenizer.get_vocab_size()
+    actual_vocab_size = tokenizer.vocab_size
 
     # Collect examples for evaluation
     all_tasks = []
@@ -92,15 +92,15 @@ def run_validation(model, val_loader, tokenizer, device, num_examples=5):
             references = []
             for i in range(tgt.size(1)):
                 tgt_tokens = tgt[1:, i].tolist()  # Skip SOS token
-                pad_id = tokenizer.token_to_id("<PAD>")
-                eos_id = tokenizer.token_to_id("<EOS>")
+                pad_id = tokenizer.convert_tokens_to_ids("<PAD>")
+                eos_id = tokenizer.convert_tokens_to_ids("<EOS>")
 
                 if pad_id is not None:
                     tgt_tokens = [t for t in tgt_tokens if t != pad_id]
                 if eos_id is not None and eos_id in tgt_tokens:
                     tgt_tokens = tgt_tokens[:tgt_tokens.index(eos_id)]
 
-                ref_text = tokenizer.decode(tgt_tokens) if tgt_tokens else ""
+                ref_text = tokenizer.decode(tgt_tokens, skip_special_tokens=False) if tgt_tokens else ""
                 references.append(ref_text)
 
             # Collect for evaluation metrics
@@ -116,10 +116,10 @@ def run_validation(model, val_loader, tokenizer, device, num_examples=5):
 
                     # Decode input
                     src_tokens = src[:, i].tolist()
-                    pad_id = tokenizer.token_to_id("<PAD>")
+                    pad_id = tokenizer.convert_tokens_to_ids("<PAD>")
                     if pad_id is not None:
                         src_tokens = [t for t in src_tokens if t != pad_id]
-                    input_text = tokenizer.decode(src_tokens)
+                    input_text = tokenizer.decode(src_tokens, skip_special_tokens=False)
 
                     print(f"\nExample {examples_shown + 1} - Task: {tasks[i]}")
                     print(f"Input: {input_text[:200]}{'...' if len(input_text) > 200 else ''}")
@@ -135,7 +135,7 @@ def run_validation(model, val_loader, tokenizer, device, num_examples=5):
     return avg_val_loss
 
 def train_model(model, train_loader, val_loader, num_epochs, device, tokenizer):
-    actual_vocab_size = tokenizer.get_vocab_size()
+    actual_vocab_size = tokenizer.vocab_size
     criterion = torch.nn.CrossEntropyLoss(ignore_index=model.embedding.padding_idx, label_smoothing=0.1)
     optimizer = torch.optim.AdamW(model.parameters(), lr=0.0001)
 
@@ -234,7 +234,7 @@ def overfit_single_batch(model, train_loader, device, tokenizer, num_iterations=
         pad_id = tokenizer.token_to_id("<PAD>")
         if pad_id is not None:
             src_tokens = [t for t in src_tokens if t != pad_id]
-        input_text = tokenizer.decode(src_tokens)
+        input_text = tokenizer.decode(src_tokens, skip_special_tokens=False)
 
         print(f"Input: {input_text[:200]}{'...' if len(input_text) > 200 else ''}")
         print(f"Greedy Output: {predictions[0][:200]}{'...' if len(predictions[0]) > 200 else ''}")

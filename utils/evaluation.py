@@ -199,9 +199,6 @@ def evaluate_tasks(
 
         if task == "RDF2Text":
             metrics = _text_metrics(preds, refs)
-            # Also compute triple metrics as fallback
-            p, r, f = _triples_prf(preds, refs)
-            metrics.update({"triple_precision": p, "triple_recall": r, "triple_f1": f})
         elif task == "Text2RDF":
             p, r, f = _triples_prf(preds, refs)
             metrics = {"precision": p, "recall": r, "f1": f}
@@ -269,9 +266,9 @@ def run_test_evaluation(model, test_dataset, tokenizer, device, MAX_LENGTH):
     print(f"Starting test with GREEDY DECODING over {len(test_dataset)} batches...")
 
     # Use proper greedy decoding for test evaluation
-    sos_id = tokenizer.token_to_id("<SOS>")
-    eos_id = tokenizer.token_to_id("<EOS>")
-    pad_id = tokenizer.token_to_id("<PAD>")
+    sos_id = tokenizer.convert_tokens_to_ids("<SOS>")
+    eos_id = tokenizer.convert_tokens_to_ids("<EOS>")
+    pad_id = tokenizer.convert_tokens_to_ids("<PAD>")
 
     with torch.no_grad():
         for batch_idx, batch in enumerate(tqdm(test_dataset, desc="Testing", unit="batch")):
@@ -304,7 +301,7 @@ def run_test_evaluation(model, test_dataset, tokenizer, device, MAX_LENGTH):
                 if ref_tokens and eos_id is not None and ref_tokens[-1] == eos_id:
                     ref_tokens = ref_tokens[:-1]
 
-                ref_text = tokenizer.decode(ref_tokens) if ref_tokens else ""
+                ref_text = tokenizer.decode(ref_tokens, skip_special_tokens=False) if ref_tokens else ""
                 references.append(ref_text)
 
             # Collect results
@@ -323,7 +320,7 @@ def run_test_evaluation(model, test_dataset, tokenizer, device, MAX_LENGTH):
                     src_tokens = src_t[:, i].tolist()
                     if pad_id is not None:
                         src_tokens = [t for t in src_tokens if t != pad_id]
-                    input_text = tokenizer.decode(src_tokens)
+                    input_text = tokenizer.decode(src_tokens, skip_special_tokens=False)
 
                     print(f"\nTest Example {examples_shown + 1} - Task: {tasks[i]}")
                     print(f"Input: {input_text[:200]}{'...' if len(input_text) > 200 else ''}")

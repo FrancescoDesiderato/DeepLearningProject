@@ -13,7 +13,7 @@ SPECIAL_TOKENS = [
 ]
 
 class BPECustom:
-    def __init__(self,underscoreRemoval,corpus_filename,tokenizer_path,VOCAB_SIZE):
+    def __init__(self, underscoreRemoval, corpus_filename, tokenizer_path, VOCAB_SIZE):
         self.underscoreRemoval = underscoreRemoval
         self.VOCAB_SIZE = VOCAB_SIZE
         self.corpus_filename = corpus_filename
