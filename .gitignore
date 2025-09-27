@@ -208,4 +208,6 @@ __marimo__/
 
 .idea
 dataset_utils/outputs/
+altri_output
+train_colab
 nanosocrates_transformer.pkl

@@ -5,9 +5,11 @@ from tokenizers.pre_tokenizers import Whitespace, Split, Sequence
 
 SPECIAL_TOKENS = [
     "<UNK>", "<PAD>", "<MASK>",
+    "<SOS>", "<EOS>",  # Added SOS and EOS tokens
     "<SOT>", "<EOT>",
     "<SUBJ>", "<PRED>", "<OBJ>",
-    "<Text2RDF>", "<RDF2Text>", "<CONTINUERDF>"
+    "<Text2RDF>", "<RDF2Text>", "<CONTINUERDF>",
+    "<MASKTASK>"
 ]
 
 class BPECustom:
@@ -50,4 +52,3 @@ class BPECustom:
         print(f"Tokenizzatore salvato con successo in '{self.tokenizer_path}'.")
 
         return tokenizer
-

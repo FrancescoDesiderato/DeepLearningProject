@@ -36,7 +36,7 @@ class DatasetConstruction:
 
         #5-DATASET
         csv_filename = "processed_samples.csv"
-        datasetFormattingClass =DatasetFormatting(output_filename_json,tokenizer_path,csv_filename ,self.MAX_LENGTH, self.BATCH_SIZE)
-        train_dataset, val_dataset, test_dataset = datasetFormattingClass.compute()
+        datasetFormattingClass = DatasetFormatting(output_filename_json, tokenizer_path, csv_filename, self.MAX_LENGTH, self.BATCH_SIZE)
+        tokenizer, train_dataset, val_dataset, test_dataset = datasetFormattingClass.compute()
 
         return tokenizer, train_dataset, val_dataset, test_dataset

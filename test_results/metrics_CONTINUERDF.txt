@@ -1,0 +1,35 @@
+Task: CONTINUERDF
+Number of samples: 29
+==================================================
+precision: 0.000000
+recall: 0.000000
+f1: 0.000000
+
+==================================================
+Sample Predictions vs References:
+==================================================
+
+Example 1:
+Prediction: dbr :' Neath the Arizona Skies dbo : distributor dbr : Sheila Terry ( actor )
+Reference:  dbr :' Neath the Arizona Skies dbo : producer dbr : Paul Malvern
+--------------------------------------------------
+
+Example 2:
+Prediction: dbr :% 22Pimpernel % 22 Smith dbo : producer dbr : Leslie Howard
+Reference:  dbr :% 22Pimpernel % 22 Smith dbo : writer dbr : A . G . Macdonell
+--------------------------------------------------
+
+Example 3:
+Prediction: dbr :' 71 Er Ma Jononi dbo : writer dbr : Anisul Haque
+Reference:  dbr :' 71 Er Ma Jononi dbo : musicComposer dbr : Emon Saha
+--------------------------------------------------
+
+Example 4:
+Prediction: dbr :' Neath the Arizona Skies dbo : distributor dbr : Sheila Terry ( actor )
+Reference:  dbr :' Neath the Arizona Skies dbo : starring dbr : Sheila Terry ( actor )
+--------------------------------------------------
+
+Example 5:
+Prediction: dbr :% 3FO , Zoo !: The Making of a Fiction Film dbo : producer dbr : Philip Hoffman ( filmmaker )
+Reference:  dbr :% 3FO , Zoo !: The Making of a Fiction Film dbo : director dbr : Philip Hoffman ( filmmaker )
+--------------------------------------------------
