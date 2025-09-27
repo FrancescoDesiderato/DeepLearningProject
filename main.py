@@ -41,6 +41,13 @@ if __name__ == '__main__':
         tokenizer, train_dataset, val_dataset, test_dataset = dataset.pipeline()
         PAD_IDX = tokenizer.token_to_id("<PAD>")
 
+    # Debug tokenizer
+    sample_text = "dbr :' If Only ' Jim dbo : director dbr : Jacques Jaccard"
+    tokens = tokenizer.encode(sample_text)
+    print(f"Original: {sample_text}")
+    print(f"Tokens: {tokens.tokens}")
+    print(f"Decoded: {tokenizer.decode(tokens.ids)}")
+
     # Sposta il modello sulla GPU se disponibile
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

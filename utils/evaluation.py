@@ -14,43 +14,64 @@ def _safe_tokens(text: str) -> List[str]:
 
 def _extract_triples(seq: str) -> List[Tuple[str, str, str]]:
     """
-    Parse a flat sequence containing serialized triples as produced by serialize_triple:
-    "<SOT> <SUBJ> s <PRED> p <OBJ> o <EOT> ..."
-    Returns list of (s, p, o).
-    Robust to extra whitespace/tokens and SOS/EOS tokens.
+    Parse triples from RDF format: "dbr:subject dbo:predicate dbr:object"
     """
-    # Remove SOS/EOS tokens for triple parsing
-    seq = re.sub(r'<SOS>|<EOS>', '', seq)
-    tokens = _safe_tokens(seq)
-    triples: List[Tuple[str, str, str]] = []
-    i = 0
-    while i < len(tokens):
-        if tokens[i] == "<SOT>":
-            # expect pattern: <SOT> <SUBJ> ... <PRED> ... <OBJ> ... <EOT>
-            subj, pred, obj = [], [], []
-            i += 1
-            mode = None
-            while i < len(tokens) and tokens[i] != "<EOT>":
-                if tokens[i] == "<SUBJ>":
-                    mode = "subj"
-                elif tokens[i] == "<PRED>":
-                    mode = "pred"
-                elif tokens[i] == "<OBJ>":
-                    mode = "obj"
-                else:
-                    if mode == "subj":
-                        subj.append(tokens[i])
-                    elif mode == "pred":
-                        pred.append(tokens[i])
-                    elif mode == "obj":
-                        obj.append(tokens[i])
+    if seq is None or not seq.strip():
+        return []
+
+    seq = re.sub(r'<SOS>|<EOS>', '', seq).strip()
+
+    # Try serialized format first
+    if '<SOT>' in seq and '<EOT>' in seq:
+        tokens = _safe_tokens(seq)
+        triples = []
+        i = 0
+        while i < len(tokens):
+            if tokens[i] == "<SOT>":
+                subj, pred, obj = [], [], []
                 i += 1
-            # advance over <EOT> if present
-            if i < len(tokens) and tokens[i] == "<EOT>":
+                mode = None
+                while i < len(tokens) and tokens[i] != "<EOT>":
+                    if tokens[i] == "<SUBJ>":
+                        mode = "subj"
+                    elif tokens[i] == "<PRED>":
+                        mode = "pred"
+                    elif tokens[i] == "<OBJ>":
+                        mode = "obj"
+                    else:
+                        if mode == "subj":
+                            subj.append(tokens[i])
+                        elif mode == "pred":
+                            pred.append(tokens[i])
+                        elif mode == "obj":
+                            obj.append(tokens[i])
+                    i += 1
+                if i < len(tokens) and tokens[i] == "<EOT>":
+                    i += 1
+                triples.append((" ".join(subj).strip(), " ".join(pred).strip(), " ".join(obj).strip()))
+            else:
                 i += 1
-            triples.append((" ".join(subj).strip(), " ".join(pred).strip(), " ".join(obj).strip()))
-        else:
-            i += 1
+        return triples
+
+    # Parse direct RDF format using regex
+    # Match pattern: dbr/dbo : content dbo : predicate dbr/dbo : content
+    pattern = r'((?:dbr|dbo)\s*:\s*[^d]*?)\s+(dbo\s*:\s*\w+)\s+((?:dbr|dbo)\s*:\s*[^d]*?)(?=\s+(?:dbr|dbo)\s*:|$)'
+
+    matches = re.findall(pattern, seq, re.DOTALL)
+    triples = []
+
+    for match in matches:
+        subj = re.sub(r'\s+', ' ', match[0].strip())
+        pred = re.sub(r'\s+', ' ', match[1].strip())
+        obj = re.sub(r'\s+', ' ', match[2].strip())
+
+        # Clean up extra content after object
+        obj = obj.split()[0:20]  # Limit object length
+        obj = ' '.join([w for w in obj if w])
+
+        if subj and pred and obj:
+            triples.append((subj, pred, obj))
+
     return triples
 
 

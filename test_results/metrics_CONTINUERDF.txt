@@ -1,9 +1,9 @@
 Task: CONTINUERDF
 Number of samples: 29
 ==================================================
-precision: 0.000000
-recall: 0.000000
-f1: 0.000000
+precision: 0.066667
+recall: 0.062500
+f1: 0.064516
 
 ==================================================
 Sample Predictions vs References:

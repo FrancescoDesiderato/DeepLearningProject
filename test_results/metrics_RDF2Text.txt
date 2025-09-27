@@ -3,10 +3,10 @@ Number of samples: 5
 ==================================================
 bleu: 0.081049
 meteor: 0.183600
-rouge1: 0.259649
-rouge2: 0.102198
-rougeL: 0.248241
-rougeLsum: 0.246236
+rouge1: 0.260033
+rouge2: 0.102092
+rougeL: 0.247238
+rougeLsum: 0.248241
 triple_precision: 0.000000
 triple_recall: 0.000000
 triple_f1: 0.000000
