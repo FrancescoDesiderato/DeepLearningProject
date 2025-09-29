@@ -15,12 +15,12 @@ underscoreRemoval = True    # The Tokenizer breaks word every _ too
 VOCAB_SIZE = 32000          # Max Vocabulary Size
 MAX_LENGTH = 256            # Max Seq length
 BATCH_SIZE = 64              # Batch Size for Training
-NUM_EPOCHS = 5            # Number of Epochs for Training
+NUM_EPOCHS = 100            # Number of Epochs for Training
 
 csv_file = "processed_samples.csv"
 tokenizer_path = "tokenizer.json"
 
-dataset_created = True     # Set to TRUE if you have the csv data
+dataset_created = False     # Set to TRUE if you have the csv data
 overfit_test = False      # Set to TRUE if you want to overfit on a small dataset
 test_flag = True            # Set to TRUE if you want to test
 model_training = False      # Set to TRUE if you need to train the model, FALSE if you already have the weights

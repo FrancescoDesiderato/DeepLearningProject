@@ -163,8 +163,9 @@ def train_model(model, train_loader, val_loader, num_epochs, device, tokenizer):
         print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {avg_loss:.4f}")
 
         # Enhanced validation with greedy decoding
-        avg_val_loss = run_validation(model, val_loader, tokenizer, device)
-        torch.save(model.state_dict(), "nanosocrates_transformer.pkl")
+        if (epoch + 1) % 5 == 0:
+            avg_val_loss = run_validation(model, val_loader, tokenizer, device)
+            torch.save(model.state_dict(), "nanosocrates_transformer.pkl")
         model.train()
 
 
