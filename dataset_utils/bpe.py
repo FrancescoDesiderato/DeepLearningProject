@@ -5,13 +5,15 @@ from tokenizers.pre_tokenizers import Whitespace, Split, Sequence
 
 SPECIAL_TOKENS = [
     "<UNK>", "<PAD>", "<MASK>",
+    "<SOS>", "<EOS>",  # Added SOS and EOS tokens
     "<SOT>", "<EOT>",
     "<SUBJ>", "<PRED>", "<OBJ>",
-    "<Text2RDF>", "<RDF2Text>", "<CONTINUERDF>"
+    "<Text2RDF>", "<RDF2Text>", "<CONTINUERDF>",
+    "<MASKTASK>"
 ]
 
 class BPECustom:
-    def __init__(self,underscoreRemoval,corpus_filename,tokenizer_path,VOCAB_SIZE):
+    def __init__(self, underscoreRemoval, corpus_filename, tokenizer_path, VOCAB_SIZE):
         self.underscoreRemoval = underscoreRemoval
         self.VOCAB_SIZE = VOCAB_SIZE
         self.corpus_filename = corpus_filename
@@ -50,4 +52,3 @@ class BPECustom:
         print(f"Tokenizzatore salvato con successo in '{self.tokenizer_path}'.")
 
         return tokenizer
-

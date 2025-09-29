@@ -24,10 +24,18 @@ class NanoSocratesDataset(Dataset):
         input_encoding = self.tokenizer.encode(input_text)
         target_encoding = self.tokenizer.encode(target_text)
 
+        # Assicura che EOS sia sempre presente
+        eos_id = self.tokenizer.token_to_id("<EOS>")
+        if len(target_encoding.ids) >= self.max_length and eos_id is not None:
+            # Tronca a max_length-1 e aggiungi EOS
+            target_ids = target_encoding.ids[:self.max_length - 1] + [eos_id]
+        else:
+            target_ids = target_encoding.ids
+
         return {
             "task": task,
             "input_ids": torch.tensor(input_encoding.ids, dtype=torch.long),
-            "labels": torch.tensor(target_encoding.ids, dtype=torch.long)
+            "labels": torch.tensor(target_ids, dtype=torch.long)
         }
 
 
@@ -64,14 +72,15 @@ class DataCollator:
         }
 
 
-def dataLoaderFromCSV(csv_file, tokenizer_path, MAX_LENGTH, BATCH_SIZE):
+def dataLoaderFromCSV(csv_file, tokenizer_path, MAX_LENGTH, BATCH_SIZE, SEED: int = 42):
     data = pd.read_csv(csv_file)
     tokenizer = Tokenizer.from_file(tokenizer_path)
     transformed_data = data[['task', 'input', 'target']].to_dict('records')
     data = NanoSocratesDataset(transformed_data, tokenizer, MAX_LENGTH)
 
     data_collator = DataCollator(tokenizer)
-    train_ds, val_ds, test_ds = torch.utils.data.random_split(data, [0.8, 0.1, 0.1])
+    generator = torch.Generator().manual_seed(SEED)
+    train_ds, val_ds, test_ds = torch.utils.data.random_split(data, [0.8, 0.1, 0.1], generator=generator)
 
     train_dataloader = DataLoader(
         train_ds,
@@ -90,7 +99,7 @@ def dataLoaderFromCSV(csv_file, tokenizer_path, MAX_LENGTH, BATCH_SIZE):
     test_dataloader = DataLoader(
         test_ds,
         batch_size=BATCH_SIZE,
-        shuffle=True,
+        shuffle=False,
         collate_fn=data_collator
     )
 

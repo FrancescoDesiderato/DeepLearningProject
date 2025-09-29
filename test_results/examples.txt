@@ -1,0 +1,29 @@
+Test Example 1 - Task: Text2RDF
+Input: ' If Only ' Jim is a 1920 American silent Western film directed by Jacques Jaccard and starring Harry Carey . The film is based on Philip Verrill Mighel ' s 1904 novel Bruvver Jim ' s Baby . It is not...
+Reference: dbr :' If Only ' Jim dbo : director dbr : Jacques Jaccard dbr :' If Only ' Jim dbo : distributor dbr : Universal Studios dbr :' If Only ' Jim dbo : language dbr : Silent film dbr :' If Only ' Jim dbo ...
+Prediction: dbr :' Til Kingdom Come ( film ) dbo : director dbr : Abraham Troen dbr :' Til Kingdom Come ( film ) dbo : producer dbr : Maya Zinshtein dbr :' Til Kingdom Come ( film ) dbo : producer dbr : John Batt...
+--------------------------------------------------------------------------------
+
+Test Example 2 - Task: Text2RDF
+Input: ' Allo ' Allo ! is a British sitcom television series , created by David Croft and Jeremy Lloyd , starring Gorden Kaye , Carmen Silvera , Guy Siner and Richard Gibson . Originally broadcast on BBC1 , ...
+Reference: dbr :' Allo ' Allo ! dbo : director dbr : David Croft ( TV producer ) dbr :' Allo ' Allo ! dbo : director dbr : Mike Stephens ( director ) dbr :' Allo ' Allo ! dbo : director dbr : Susan Belbin dbr :'...
+Prediction: dbr :' Neath the Arizona Skies dbo : director dbr : John D . Reeves Eason dbr :' Neath the Arizona Skies dbo : producer dbr : John D . Lippert dbr :' Neath the Arizona Skies dbo : producer dbr : John ...
+--------------------------------------------------------------------------------
+
+Test Example 3 - Task: CONTINUERDF
+Input: dbr :' Neath the Arizona Skies dbo : distributor dbr : Monogram Pictures Corporation
+Reference: dbr :' Neath the Arizona Skies dbo : producer dbr : Paul Malvern
+Prediction: dbr :' Neath the Arizona Skies dbo : distributor dbr : Sheila Terry ( actor )
+--------------------------------------------------------------------------------
+
+Test Example 4 - Task: CONTINUERDF
+Input: dbr :' Til Kingdom Come ( film ) dbo : producer dbr : Maya Zinshtein
+Reference: dbr :' Til Kingdom Come ( film ) dbo : country dbr : United States
+Prediction: dbr :' Til Kingdom Come ( film ) dbo : producer dbr : Maya Zinshtein
+--------------------------------------------------------------------------------
+
+Test Example 5 - Task: MASK
+Input: dbr :' Blue Blazes ' Rawden dbo : cinematography
+Reference: dbr :' Blue Blazes ' Rawden dbo : cinematography dbr : Joseph H . August
+Prediction: dbr :' Blue Blazes ' Rawden dbo : starring dbr : Robert Gordon ( actor )
+--------------------------------------------------------------------------------

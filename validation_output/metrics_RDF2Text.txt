@@ -1,0 +1,21 @@
+Task: RDF2Text
+Number of samples: 1
+==================================================
+bleu: 0.063182
+meteor: 0.278809
+rouge1: 0.216216
+rouge2: 0.123288
+rougeL: 0.216216
+rougeLsum: 0.216216
+triple_precision: 0.000000
+triple_recall: 0.000000
+triple_f1: 0.000000
+
+==================================================
+Sample Predictions vs References:
+==================================================
+
+Example 1:
+Prediction: ' R Xmas is a silent drama film directed by Abel Ferrara of the series , and starring Harry in the series , and starring R . The film was released on in the series , and one of the series , and one of the series , and one of the series , and one of the series , and one of the series , and one of the...
+Reference:  ' R Xmas is a 2001 American crime film directed by Abel Ferrara . It was screened in the Un Certain Regard section at the 2001 Cannes Film Festival . Its release was delayed by StudioCanal but it was eventually released on DVD .
+--------------------------------------------------

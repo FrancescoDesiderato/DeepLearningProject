@@ -1,0 +1,36 @@
+Task: MASK
+Number of samples: 44
+==================================================
+accuracy: 0.045455
+precision: 0.090909
+recall: 0.095238
+f1: 0.093023
+
+==================================================
+Sample Predictions vs References:
+==================================================
+
+Example 1:
+Prediction: dbr :' Gator Bait dbo : distributor dbr : Beverly Sebastian
+Reference:  dbr :$ 30 , 000 dbo : distributor dbr : Hodkinson Pictures
+--------------------------------------------------
+
+Example 2:
+Prediction: dbr :' Neath the Arizona Skies dbo : starring dbr : Monogram Pictures
+Reference:  dbr :' Neath Brooklyn Bridge dbo : distributor dbr : Monogram Pictures Corporation
+--------------------------------------------------
+
+Example 3:
+Prediction: dbr :' 68 ( film ) dbo : distributor dbr : New World Pictures
+Reference:  dbr :' 68 ( film ) dbo : musicComposer dbr : John Cipollina
+--------------------------------------------------
+
+Example 4:
+Prediction: dbr :' Til Kingdom Come ( film ) dbo : producer dbr : Maya Zinshtein
+Reference:  dbr :$ 1 , 000 a Touchdown dbo : producer dbr : William C . Thomas
+--------------------------------------------------
+
+Example 5:
+Prediction: dbr :% 3F ( film ) dbo : cinematography dbr : Yadi Sugandi
+Reference:  dbr :% 3F ( film ) dbo : starring dbr : Revalina S . Temat
+--------------------------------------------------

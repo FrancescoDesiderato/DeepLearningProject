@@ -4,7 +4,7 @@ import pandas as pd
 import torch
 from tokenizers import Tokenizer
 from torch.utils.data import DataLoader
-from dataset_utils.dataset import NanoSocratesDataset,DataCollator
+from dataset_utils.dataset import NanoSocratesDataset, DataCollator
 
 def serialize_triple(triple_dict):
     s = triple_dict.get('subject', '')
@@ -13,14 +13,14 @@ def serialize_triple(triple_dict):
     return f"<SOT> <SUBJ> {s} <PRED> {p} <OBJ> {o} <EOT>"
 
 class DatasetFormatting:
-    def __init__(self,dataset_filename,tokenizer_path,csv_filename,MAX_LENGTH,BATCH_SIZE):
+    def __init__(self,dataset_filename,tokenizer_path,csv_filename, MAX_LENGTH, BATCH_SIZE):
         self.dataset_filename = dataset_filename
         self.tokenizer_path = tokenizer_path
         self.MAX_LENGTH = MAX_LENGTH
         self.csv_filename = csv_filename
         self.BATCH_SIZE = BATCH_SIZE
 
-    def compute(self):
+    def compute(self, seed=42):
         with open(self.dataset_filename, "r", encoding="utf-8") as f:
             original_dataset = json.load(f)
 
@@ -36,20 +36,19 @@ class DatasetFormatting:
             if not text or not triples:
                 continue
 
-            # Text2RDF
+            # Text2RDF - Add SOS/EOS tokens to target
             input_text1 = f"<Text2RDF> {text}"
-            target_text1 = " ".join([serialize_triple(t) for t in triples])
+            target_text1 = f"<SOS> {' '.join([serialize_triple(t) for t in triples])} <EOS>"
             if target_text1:
                 processed_samples.append({"task":"Text2RDF","input": input_text1, "target": target_text1})
 
-            # RDF2Text
+            # RDF2Text - Add SOS/EOS tokens to target
             input_text2 = f"<RDF2Text> {' '.join([serialize_triple(t) for t in triples])}"
-            target_text2 = text
+            target_text2 = f"<SOS> {text} <EOS>"
             if input_text2:
                 processed_samples.append({"task":"RDF2Text","input": input_text2, "target": target_text2})
 
-            # RDF Completion 1 (Masking)
-            # TODO capire se abbia senso considerare la probabilità oppure fare direttamente due esempi per tripla
+            # RDF Completion 1 (Masking) - Add SOS/EOS tokens to target
             for triple in triples:
                 components = ["subject", "predicate", "object"]
 
@@ -58,8 +57,8 @@ class DatasetFormatting:
                 masked_triple_single = triple.copy()
                 masked_triple_single[component_to_mask] = "<MASK>"
 
-                input_text3_single = serialize_triple(masked_triple_single)
-                target_text3_single = serialize_triple(triple)
+                input_text3_single = f"<MASKTASK> {serialize_triple(masked_triple_single)}"
+                target_text3_single = f"<SOS> {serialize_triple(triple)} <EOS>"
                 processed_samples.append(
                     {"task":"MASK","input": input_text3_single, "target": target_text3_single})
 
@@ -70,28 +69,22 @@ class DatasetFormatting:
                     for comp in components_to_mask:
                         masked_triple_double[comp] = "<MASK>"
 
-                    input_text3_double = serialize_triple(masked_triple_double)
-                    target_text3_double = serialize_triple(triple)
+                    input_text3_double = f"<MASKTASK> {serialize_triple(masked_triple_double)}"
+                    target_text3_double = f"<SOS> {serialize_triple(triple)} <EOS>"
                     processed_samples.append(
                         {"task":"MASK","input": input_text3_double, "target": target_text3_double})
 
-                # RDF Completion 2 (Continuation)
-                #TODO capire se va bene
-                if len(triples) == 1:
-                    for i in range(len(triples) - 1):
-                        input_text4 = f"<CONTINUERDF> {serialize_triple(triples[i])}"
-                        target_text4 = serialize_triple(triples[i + 1])
-                        processed_samples.append({"task":"CONTINUERDF","input": input_text4, "target": target_text4})
-                else:
+                # RDF Completion 2 (Continuation) - Add SOS/EOS tokens to target
+                if len(triples) >= 2:
                     available_indices = list(range(len(triples)))
                     context_idx = random.choice(available_indices)
                     target_candidates = [idx for idx in available_indices if idx != context_idx]
                     target_idx = random.choice(target_candidates)
 
-                    input_text4_random = f"<CONTINUERDF> {serialize_triple(triples[context_idx])}"
-                    target_text4_random = serialize_triple(triples[target_idx])
+                    input_text4 = f"<CONTINUERDF> {serialize_triple(triples[context_idx])}"
+                    target_text4 = f"<SOS> {serialize_triple(triples[target_idx])} <EOS>"
                     processed_samples.append(
-                        {"task":"CONTINUERDF","input": input_text4_random, "target": target_text4_random})
+                        {"task":"CONTINUERDF","input": input_text4, "target": target_text4})
 
 
         print(f"Creati {len(processed_samples)} esempi di addestramento totali.")
@@ -109,10 +102,12 @@ class DatasetFormatting:
         df.to_csv(self.csv_filename, index=False, encoding='utf-8', columns=["task", "input", "target"])
         print(f"Dataset salvato come CSV: {self.csv_filename}")
 
-        train_dataset = NanoSocratesDataset(processed_samples, tokenizer, self.MAX_LENGTH)
+        dataset = NanoSocratesDataset(processed_samples, tokenizer, self.MAX_LENGTH)
         data_collator = DataCollator(tokenizer)
-
-        train_ds, val_ds, test_ds = torch.utils.data.random_split(train_dataset, [0.8, 0.1, 0.1])
+        generator = torch.Generator().manual_seed(seed)
+        train_ds, val_ds, test_ds = torch.utils.data.random_split(
+            dataset, [0.8, 0.1, 0.1], generator=generator
+        )
 
         train_dataloader = DataLoader(
             train_ds,
@@ -129,10 +124,9 @@ class DatasetFormatting:
 
         test_dataloader = DataLoader(
             test_ds,
-            batch_size=1,
-            shuffle=True,
+            batch_size=self.BATCH_SIZE,
+            shuffle=False,
             collate_fn=data_collator
         )
 
-        return train_dataloader, evaluation_dataloader, test_dataloader
-
+        return tokenizer, train_dataloader, evaluation_dataloader, test_dataloader
