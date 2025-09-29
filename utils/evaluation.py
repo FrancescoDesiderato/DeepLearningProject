@@ -112,6 +112,69 @@ def _mask_accuracy(preds: List[str], refs: List[str]) -> float:
         total += 1
     return correct / total if total > 0 else 0.0
 
+def _mask_accuracy_all(preds: List[str], refs: List[str],inps:List[str]) -> float:
+    """The accuracy metric is calculated wrt all possible matches in the corpus.
+    Furthermore this metric is not token based but triples based"""
+    correct = 0
+    total = 0
+
+    corpus_path = "dataset_utils/outputs/corpus.txt"
+
+    with open(corpus_path, "r") as corpus_file:
+        txt = corpus_file.read()
+
+    pattern = r'<SOT>\s*<SUBJ>\s*([^<]+)\s*<PRED>\s*([^<]+)\s*<OBJ>\s*([^<]+)\s*<EOT>'
+    matches = re.findall(pattern, txt)
+
+    for i,p in zip(inps, preds):
+        total += 1 #Count dei sample presenti
+        pattern = re.compile(
+            r'<SOT>\s*'
+            r'<SUBJ>\s*(?P<subj>[^<]+)\s*'
+            r'<PRED>\s*(?P<pred>[^<]+)\s*'
+            r'<OBJ>\s*(?P<obj>[^<]+)\s*'
+            r'<EOT>'
+        )
+        pattern_mask = re.compile(
+            r'<SOT>\s*'
+            r'<SUBJ>\s*(?P<subj>(?:<MASK>|[^<]+))\s*'
+            r'<PRED>\s*(?P<pred>(?:<MASK>|[^<]+))\s*'
+            r'<OBJ>\s*(?P<obj>(?:<MASK>|[^<]+))\s*'
+            r'<EOT>',
+            flags=re.DOTALL
+        )
+
+        m = pattern.search(p)
+        if m:
+            triple_p = {k: v.strip() for k, v in m.groupdict().items()}  # {'subj': 'dbr:$1,000_a_Touchdown', 'pred': 'dbo:starring', 'obj': 'dbr:Joe_E._Brown'}
+
+        m = pattern_mask.search(i)
+        if m:
+            triple_i = {k: v.strip() for k, v in m.groupdict().items()} # {'subj': '<MASK>', 'pred': 'dbo:starring', 'obj': 'dbr:Joe_E._Brown'}
+
+        continueFlag = True
+        for el_p,el_i in zip(triple_p, triple_i):
+            if el_i == "<MASK>":
+                continue
+            elif el_i == el_p:
+                continue
+            else:
+                continueFlag = False
+        #Controllo
+        if continueFlag: #TODO: Controllo con i match nel corpus
+            for match in matches:
+                m = pattern.search(p)
+                if m:
+                    triple_m = {k: v.strip() for k, v in m.groupdict().items()}
+
+                if all(k in triple_m and triple_m[k] == v for k, v in triple_i.items()):
+                    correct += 1
+                    break
+
+        return correct / total if total > 0 else 0.0
+
+
+
 
 def _text_metrics(preds: List[str], refs: List[str]) -> Dict[str, float]:
     # Clean predictions and references from special tokens for text metrics
@@ -163,6 +226,7 @@ def evaluate_tasks(
     task_list: List[str],
     predictions: List[str],
     references: List[str],
+    inputs: List[str],
     output_dir: str = "altri_output",
 ) -> Dict[str, Dict[str, float]]:
     """
@@ -178,22 +242,25 @@ def evaluate_tasks(
     os.makedirs(output_dir, exist_ok=True)
 
     # normalize potential tag spacing issues
+    inputs = [normalize_triple_text(i) for i in predictions]
     predictions = [normalize_triple_text(p) for p in predictions]
     references = [normalize_triple_text(r) for r in references]
 
     # Group by task
     buckets: Dict[str, Dict[str, List[str]]] = {}
-    for t, p, r in zip(task_list, predictions, references):
+    for t, p, r,i in zip(task_list, predictions, references,inputs):
         if t not in buckets:
-            buckets[t] = {"preds": [], "refs": []}
+            buckets[t] = {"preds": [], "refs": [],"inputs":[]}
         buckets[t]["preds"].append(p)
         buckets[t]["refs"].append(r)
+        buckets[t]["inputs"].append(i)
 
     results: Dict[str, Dict[str, float]] = {}
 
     for task, data in buckets.items():
         preds = data["preds"]
         refs = data["refs"]
+        inps = data["inputs"]
 
         print(f"\n=== Evaluating {task} ({len(preds)} samples) ===")
 
@@ -204,8 +271,8 @@ def evaluate_tasks(
             metrics = {"precision": p, "recall": r, "f1": f}
         elif task == "MASK":  # RDF Completion 1
             acc = _mask_accuracy(preds, refs)
-            p, r, f = _triples_prf(preds, refs)
-            metrics = {"accuracy": acc, "precision": p, "recall": r, "f1": f}
+            acc_all = _mask_accuracy_all(preds, refs,inps)
+            metrics = {"accuracy": acc,"accuracy_wrt_all":acc_all}
         elif task == "CONTINUERDF":  # RDF Completion 2
             p, r, f = _triples_prf(preds, refs)
             metrics = {"precision": p, "recall": r, "f1": f}
@@ -256,6 +323,7 @@ def run_test_evaluation(model, test_dataset, tokenizer, device, MAX_LENGTH):
     Esegue la valutazione del modello sul test set usando greedy decoding.
     """
     model.eval()
+    all_input = []
     all_tasks = []
     all_predictions = []
     all_references = []
@@ -304,7 +372,11 @@ def run_test_evaluation(model, test_dataset, tokenizer, device, MAX_LENGTH):
                 ref_text = tokenizer.decode(ref_tokens, skip_special_tokens=False) if ref_tokens else ""
                 references.append(ref_text)
 
+            src_tokens = src_t.tolist()
+            src_tokens = [t for t in src_tokens if t != pad_id]
+            input_text_full_batch = tokenizer.decode(src_tokens, skip_special_tokens=False)
             # Collect results
+            all_input.extend(input_text_full_batch)
             all_tasks.extend(tasks)
             all_predictions.extend(predictions)
             all_references.extend(references)
@@ -331,6 +403,6 @@ def run_test_evaluation(model, test_dataset, tokenizer, device, MAX_LENGTH):
 
     # Compute and save metrics per task
     print(f"\nEvaluating {total_examples} examples across {len(set(all_tasks))} task types...")
-    evaluate_tasks(all_tasks, all_predictions, all_references, output_dir="test_results")
+    evaluate_tasks(all_tasks, all_predictions, all_references,all_input, output_dir="test_results")
 
     print(f"Results saved in 'test_results/' directory")

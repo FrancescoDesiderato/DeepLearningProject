@@ -137,7 +137,7 @@ def run_validation(model, val_loader, tokenizer, device, num_examples=5):
 def train_model(model, train_loader, val_loader, num_epochs, device, tokenizer):
     actual_vocab_size = tokenizer.vocab_size
     criterion = torch.nn.CrossEntropyLoss(ignore_index=model.embedding.padding_idx, label_smoothing=0.1)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=0.0001)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-5,weight_decay=0.01)
 
     model.train()
     for epoch in range(num_epochs):
