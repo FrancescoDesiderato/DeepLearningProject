@@ -76,16 +76,26 @@ class DatasetFormatting:
 
                 # RDF Completion 2 (Continuation) - Add SOS/EOS tokens to target
                 if len(triples) >= 2:
-                    available_indices = list(range(len(triples)))
-                    context_idx = random.choice(available_indices)
-                    target_candidates = [idx for idx in available_indices if idx != context_idx]
-                    target_idx = random.choice(target_candidates)
+                    indices = list(range(len(triples)))
+                    # scegli 1..len(triples)-1 triple di contesto
+                    ctx_count = random.randint(1, len(triples) - 1)
+                    ctx_indices = sorted(random.sample(indices, ctx_count))
+                    remaining = [i for i in indices if i not in ctx_indices]
 
-                    input_text4 = f"<CONTINUERDF> {serialize_triple(triples[context_idx])}"
-                    target_text4 = f"<SOS> {serialize_triple(triples[target_idx])} <EOS>"
+                    # scegli 1..K triple target (limita K per controllare la lunghezza)
+                    max_target = min(len(remaining), 3)  # limite pratico
+                    tgt_count = random.randint(1, max_target)
+                    tgt_indices = sorted(random.sample(remaining, tgt_count))
+
+                    context_triples = [serialize_triple(triples[i]) for i in ctx_indices]
+                    target_triples = [serialize_triple(triples[i]) for i in tgt_indices]
+
+                    input_text4 = f"<CONTINUERDF> {' '.join(context_triples)}"
+                    target_text4 = f"<SOS> {' '.join(target_triples)} <EOS>"
+
                     processed_samples.append(
-                        {"task":"CONTINUERDF","input": input_text4, "target": target_text4})
-
+                        {"task": "CONTINUERDF", "input": input_text4, "target": target_text4}
+                    )
 
         print(f"Creati {len(processed_samples)} esempi di addestramento totali.")
         print("\n--- Esempi del dataset formattato ---")
