@@ -2,6 +2,8 @@ import torch
 from tokenizers import Tokenizer
 from torch.utils.data import Dataset, DataLoader
 import pandas as pd
+from sklearn.model_selection import train_test_split
+from collections import Counter
 
 class NanoSocratesDataset(Dataset):
     def __init__(self, samples, tokenizer, max_length):
@@ -71,16 +73,41 @@ class DataCollator:
             'labels': labels_padded
         }
 
-
 def dataLoaderFromCSV(csv_file, tokenizer_path, MAX_LENGTH, BATCH_SIZE, SEED: int = 42):
     data = pd.read_csv(csv_file)
     tokenizer = Tokenizer.from_file(tokenizer_path)
-    transformed_data = data[['task', 'input', 'target']].to_dict('records')
-    data = NanoSocratesDataset(transformed_data, tokenizer, MAX_LENGTH)
+    train_dataloader, evaluation_dataloader, test_dataloader = dataset_split(data, tokenizer, MAX_LENGTH, BATCH_SIZE, SEED)
+
+    return tokenizer, train_dataloader, evaluation_dataloader, test_dataloader
+
+def dataset_split(data, tokenizer, MAX_LENGTH, BATCH_SIZE, SEED: int = 42):
+    X = data[['input', 'target']].to_dict('records')
+    y = data['task'].tolist()
+
+    # train (80%) vs temp (20%)
+    X_train, X_temp, y_train, y_temp = train_test_split(
+        X, y, test_size=0.2, stratify=y, random_state=SEED
+    )
+
+    # validation (10%) vs test (10%) dal temp (20%)
+    X_val, X_test, y_val, y_test = train_test_split(
+        X_temp, y_temp, test_size=0.5, stratify=y_temp, random_state=SEED
+    )
+
+    # Ricostruisci i dataset con i task
+    def create_samples(X_data, y_data):
+        return [{'task': task, 'input': sample['input'], 'target': sample['target']}
+                for sample, task in zip(X_data, y_data)]
+
+    train_samples = create_samples(X_train, y_train)
+    val_samples = create_samples(X_val, y_val)
+    test_samples = create_samples(X_test, y_test)
+
+    train_ds = NanoSocratesDataset(train_samples, tokenizer, MAX_LENGTH)
+    val_ds = NanoSocratesDataset(val_samples, tokenizer, MAX_LENGTH)
+    test_ds = NanoSocratesDataset(test_samples, tokenizer, MAX_LENGTH)
 
     data_collator = DataCollator(tokenizer)
-    generator = torch.Generator().manual_seed(SEED)
-    train_ds, val_ds, test_ds = torch.utils.data.random_split(data, [0.8, 0.1, 0.1], generator=generator)
 
     train_dataloader = DataLoader(
         train_ds,
@@ -103,4 +130,9 @@ def dataLoaderFromCSV(csv_file, tokenizer_path, MAX_LENGTH, BATCH_SIZE, SEED: in
         collate_fn=data_collator
     )
 
-    return tokenizer, train_dataloader, evaluation_dataloader, test_dataloader
+    print("Train task distribution:", Counter(y_train))
+    print("Validation task distribution:", Counter(y_val))
+    print("Test task distribution:", Counter(y_test))
+
+    return train_dataloader, evaluation_dataloader, test_dataloader
+

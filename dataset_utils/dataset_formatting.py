@@ -1,10 +1,8 @@
 import json
 import random
 import pandas as pd
-import torch
 from tokenizers import Tokenizer
-from torch.utils.data import DataLoader
-from dataset_utils.dataset import NanoSocratesDataset, DataCollator
+from dataset_utils.dataset import dataset_split
 
 def serialize_triple(triple_dict):
     s = triple_dict.get('subject', '')
@@ -112,31 +110,5 @@ class DatasetFormatting:
         df.to_csv(self.csv_filename, index=False, encoding='utf-8', columns=["task", "input", "target"])
         print(f"Dataset salvato come CSV: {self.csv_filename}")
 
-        dataset = NanoSocratesDataset(processed_samples, tokenizer, self.MAX_LENGTH)
-        data_collator = DataCollator(tokenizer)
-        generator = torch.Generator().manual_seed(seed)
-        train_ds, val_ds, test_ds = torch.utils.data.random_split(
-            dataset, [0.8, 0.1, 0.1], generator=generator
-        )
-
-        train_dataloader = DataLoader(
-            train_ds,
-            batch_size=self.BATCH_SIZE,
-            shuffle=True,
-            collate_fn=data_collator
-        )
-        evaluation_dataloader = DataLoader(
-            val_ds,
-            batch_size=self.BATCH_SIZE,
-            shuffle=True,
-            collate_fn=data_collator
-        )
-
-        test_dataloader = DataLoader(
-            test_ds,
-            batch_size=self.BATCH_SIZE,
-            shuffle=False,
-            collate_fn=data_collator
-        )
-
+        train_dataloader, evaluation_dataloader, test_dataloader = dataset_split(df, tokenizer, self.MAX_LENGTH, self.BATCH_SIZE, seed)
         return tokenizer, train_dataloader, evaluation_dataloader, test_dataloader
