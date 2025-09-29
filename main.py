@@ -31,7 +31,7 @@ NUM_ENCODER_LAYERS = 4      # Numero di layer nell'encoder
 NUM_DECODER_LAYERS = 4      # Numero di layer nel decoder
 FFN_HID_DIM = 256           # Dimensione del layer nascosto nella Feed-Forward Network
 DROPOUT = 0.3
-weight_path = "nanosocrates_transformer.pkl"
+weight_path = "nanosocrates_transformer_150_wd.pkl"
 
 
 if __name__ == '__main__':
@@ -46,6 +46,7 @@ if __name__ == '__main__':
     # Debug tokenizer
     sample_text = "<SOS> <SOT> <SUBJ> dbr :' If Only ' Jim <PRED> dbo : director <OBJ> dbr : Jacques Jaccard <EOT> <EOS>"
     tokenizer = PreTrainedTokenizerFast(tokenizer_file=tokenizer_path)
+    # PAD_IDX = tokenizer.convert_tokens_to_ids("<PAD>")
     tokens = tokenizer.encode(sample_text)
     print(f"Original: {sample_text}")
     print(f"Tokens: {tokens}")

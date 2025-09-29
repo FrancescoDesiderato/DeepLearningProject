@@ -7,10 +7,15 @@ import evaluate
 import time
 
 def _safe_tokens(text: str) -> List[str]:
+    """
+    Tokenizza in modo sicuro:
+    - Restituisce [] se `text` è None.
+    - Converte in str, fa strip e split su spazi bianchi (collassando spazi multipli).
+    """
     if text is None:
         return []
+    # split() senza argomenti rimuove token vuoti e separa su qualsiasi whitespace
     return str(text).strip().split()
-
 
 def _extract_triples(seq: str) -> List[Tuple[str, str, str]]:
     """
@@ -21,57 +26,34 @@ def _extract_triples(seq: str) -> List[Tuple[str, str, str]]:
 
     seq = re.sub(r'<SOS>|<EOS>', '', seq).strip()
 
-    # Try serialized format first
-    if '<SOT>' in seq and '<EOT>' in seq:
-        tokens = _safe_tokens(seq)
-        triples = []
-        i = 0
-        while i < len(tokens):
-            if tokens[i] == "<SOT>":
-                subj, pred, obj = [], [], []
-                i += 1
-                mode = None
-                while i < len(tokens) and tokens[i] != "<EOT>":
-                    if tokens[i] == "<SUBJ>":
-                        mode = "subj"
-                    elif tokens[i] == "<PRED>":
-                        mode = "pred"
-                    elif tokens[i] == "<OBJ>":
-                        mode = "obj"
-                    else:
-                        if mode == "subj":
-                            subj.append(tokens[i])
-                        elif mode == "pred":
-                            pred.append(tokens[i])
-                        elif mode == "obj":
-                            obj.append(tokens[i])
-                    i += 1
-                if i < len(tokens) and tokens[i] == "<EOT>":
-                    i += 1
-                triples.append((" ".join(subj).strip(), " ".join(pred).strip(), " ".join(obj).strip()))
-            else:
-                i += 1
-        return triples
-
-    # Parse direct RDF format using regex
-    # Match pattern: dbr/dbo : content dbo : predicate dbr/dbo : content
-    pattern = r'((?:dbr|dbo)\s*:\s*[^d]*?)\s+(dbo\s*:\s*\w+)\s+((?:dbr|dbo)\s*:\s*[^d]*?)(?=\s+(?:dbr|dbo)\s*:|$)'
-
-    matches = re.findall(pattern, seq, re.DOTALL)
+    tokens = _safe_tokens(seq)
     triples = []
-
-    for match in matches:
-        subj = re.sub(r'\s+', ' ', match[0].strip())
-        pred = re.sub(r'\s+', ' ', match[1].strip())
-        obj = re.sub(r'\s+', ' ', match[2].strip())
-
-        # Clean up extra content after object
-        obj = obj.split()[0:20]  # Limit object length
-        obj = ' '.join([w for w in obj if w])
-
-        if subj and pred and obj:
-            triples.append((subj, pred, obj))
-
+    i = 0
+    while i < len(tokens):
+        if tokens[i] == "<SOT>":
+            subj, pred, obj = [], [], []
+            i += 1
+            mode = None
+            while i < len(tokens) and tokens[i] != "<EOT>":
+                if tokens[i] == "<SUBJ>":
+                    mode = "subj"
+                elif tokens[i] == "<PRED>":
+                    mode = "pred"
+                elif tokens[i] == "<OBJ>":
+                    mode = "obj"
+                else:
+                    if mode == "subj":
+                        subj.append(tokens[i])
+                    elif mode == "pred":
+                        pred.append(tokens[i])
+                    elif mode == "obj":
+                        obj.append(tokens[i])
+                i += 1
+            if i < len(tokens) and tokens[i] == "<EOT>":
+                i += 1
+            triples.append((" ".join(subj).strip(), " ".join(pred).strip(), " ".join(obj).strip()))
+        else:
+            i += 1
     return triples
 
 
@@ -81,17 +63,24 @@ def _precision_recall_f1(tp: int, fp: int, fn: int) -> Tuple[float, float, float
     f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
     return precision, recall, f1
 
-
 def _triples_prf(preds: List[str], refs: List[str]) -> Tuple[float, float, float]:
+    """
+    Calcola precision, recall e F1 basandosi sul matching esatto delle triple estratte.
+    È invariante rispetto all'ordine delle triple nella stessa stringa.
+    """
     tp = fp = fn = 0
     for pred_str, ref_str in zip(preds, refs):
+        # Estrae triple da predizione e riferimento
         pred_triples = set(_extract_triples(pred_str))
         ref_triples = set(_extract_triples(ref_str))
+        # True positives: triple comuni
         tp += len(pred_triples & ref_triples)
+        # False positives: triple predette ma non presenti nel riferimento
         fp += len(pred_triples - ref_triples)
+        # False negatives: triple nel riferimento non predette
         fn += len(ref_triples - pred_triples)
+    # Restituisce (precision, recall, f1)
     return _precision_recall_f1(tp, fp, fn)
-
 
 def _mask_accuracy(preds: List[str], refs: List[str]) -> float:
     """
@@ -151,13 +140,11 @@ def _text_metrics(preds: List[str], refs: List[str]) -> Dict[str, float]:
 
 _TAG_PATTERN = re.compile(r"(<SOT>|<SUBJ>|<PRED>|<OBJ>|<EOT>|<MASK>|<MASKTASK>|<SOS>|<EOS>)")
 
-
 def normalize_triple_text(text: str) -> str:
     if text is None:
         return ""
     text = _TAG_PATTERN.sub(r" \1 ", text)
     return " ".join(text.strip().split())
-
 
 def evaluate_tasks(
     task_list: List[str],
@@ -204,8 +191,7 @@ def evaluate_tasks(
             metrics = {"precision": p, "recall": r, "f1": f}
         elif task == "MASK":  # RDF Completion 1
             acc = _mask_accuracy(preds, refs)
-            p, r, f = _triples_prf(preds, refs)
-            metrics = {"accuracy": acc, "precision": p, "recall": r, "f1": f}
+            metrics = {"accuracy": acc}
         elif task == "CONTINUERDF":  # RDF Completion 2
             p, r, f = _triples_prf(preds, refs)
             metrics = {"precision": p, "recall": r, "f1": f}
