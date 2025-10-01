@@ -17,12 +17,12 @@ class DatasetConstruction:
 
     def pipeline(self):
         #1-STEP: ENDPOINT
-        output_filename_uri = "1500_dataset/film_uris_1500.txt"
+        output_filename_uri = "dataset_utils/film_uris_1500.txt"
         """endpointClass = Endpoint(self.page_size,output_filename_uri)
         endpointClass.compute()"""
 
         #2-STEP: JSON RETRIEVE
-        output_filename_json = "1500_dataset/final_paired_dataset_1500.json"
+        output_filename_json = "dataset_utils/final_paired_dataset_1500.json"
         jsonRetrieveClass = JSONRetrieve(self.test_enable, output_filename_uri,output_filename_json)
         jsonRetrieveClass.compute()
 

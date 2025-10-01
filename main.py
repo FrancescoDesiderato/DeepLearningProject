@@ -1,3 +1,4 @@
+import torch
 from torch.utils.data import DataLoader
 from utils.mlm import CorpusMLMDataset, MLMPadCollator
 from transformers import PreTrainedTokenizerFast
@@ -24,13 +25,14 @@ dataset_size = 1500        # Set to a number to limit the dataset size (for test
 csv_file = "processed_samples.csv"
 tokenizer_path = "tokenizer.json"
 
-dataset_created = False     # Set to TRUE if you have the csv data
-enable_mlm = False          # Set to TRUE if you want to use MLM during training
+dataset_created = True     # Set to TRUE if you have the csv data
+enable_mlm = True          # Set to TRUE if you want to use MLM during training
+mlm_trained = False         # Set to TRUE if you want to load a pre-trained MLM model
 full_balancing = True       # Set to TRUE if you want truly balanced dataset (only 1 sample for masking and continuerdf)
 warm_restart = True        # Set to TRUE if you want to use warm restarts
 overfit_test = False      # Set to TRUE if you want to overfit on a small dataset
 test_flag = True            # Set to TRUE if you want to test
-model_training = False      # Set to TRUE if you need to train the model, FALSE if you already have the weights
+model_training = True      # Set to TRUE if you need to train the model, FALSE if you already have the weights
 
 D_MODEL = 256               # Dimensione nascosta (embedding dimension)
 N_HEADS = 4                 # Numero di teste di attenzione (deve dividere D_MODEL)
@@ -128,7 +130,12 @@ if __name__ == '__main__':
 
             model.to(device)
             model = train_mlm(mlm_loader, model, epochs=100)
+            torch.save(model, "nanosocrates_mlm.pkl")
             model = model.transformer
+
+        if mlm_trained:
+            model.load_state_dict(torch.load("nanosocrates_mlm.pkl", map_location=device).state_dict())
+            model.to(device)
 
         train_model(model=model,
                     train_loader=train_dataset,
