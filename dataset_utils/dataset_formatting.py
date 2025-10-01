@@ -11,13 +11,14 @@ def serialize_triple(triple_dict):
     return f"<SOT> <SUBJ> {s} <PRED> {p} <OBJ> {o} <EOT>"
 
 class DatasetFormatting:
-    def __init__(self,dataset_filename,tokenizer_path,csv_filename, MAX_LENGTH, BATCH_SIZE,full_balancing):
+    def __init__(self,dataset_filename,tokenizer_path,csv_filename, MAX_LENGTH, BATCH_SIZE, full_balancing, dataset_size = None):
         self.dataset_filename = dataset_filename
         self.tokenizer_path = tokenizer_path
         self.MAX_LENGTH = MAX_LENGTH
         self.csv_filename = csv_filename
         self.BATCH_SIZE = BATCH_SIZE
         self.full_balancing = full_balancing
+        self.dataset_size = dataset_size
 
     def compute(self, seed=42):
         with open(self.dataset_filename, "r", encoding="utf-8") as f:
@@ -27,6 +28,9 @@ class DatasetFormatting:
         processed_samples = []
 
         print("Inizio la formattazione degli esempi per i 4 task...")
+
+        if self.dataset_size:
+            original_dataset = original_dataset[:self.dataset_size]
 
         for item in original_dataset:
             text = item["text"]

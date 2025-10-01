@@ -13,12 +13,13 @@ from utils.evaluation import run_test_evaluation
 
 
 page_size = 5000            # Max number of pages
-test_enable = True          # Toy Dataset Flag
+test_enable = False          # Toy Dataset Flag
 underscoreRemoval = True    # The Tokenizer breaks word every _ too
 VOCAB_SIZE = 32000          # Max Vocabulary Size
 MAX_LENGTH = 256            # Max Seq length
 BATCH_SIZE = 64              # Batch Size for Training
 NUM_EPOCHS = 150            # Number of Epochs for Training
+dataset_size = 1500        # Set to a number to limit the dataset size (for testing purposes)
 
 csv_file = "processed_samples.csv"
 tokenizer_path = "tokenizer.json"
@@ -56,7 +57,7 @@ if __name__ == '__main__':
         PAD_IDX = tokenizer.token_to_id("<PAD>")
     else:
         dataset = DatasetConstruction(page_size, test_enable, underscoreRemoval,
-                                      VOCAB_SIZE, MAX_LENGTH, BATCH_SIZE, full_balancing)
+                                      VOCAB_SIZE, MAX_LENGTH, BATCH_SIZE, full_balancing, dataset_size)
         tokenizer, train_dataset, val_dataset, test_dataset = dataset.pipeline()
         PAD_IDX = tokenizer.token_to_id("<PAD>")
 
