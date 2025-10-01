@@ -75,3 +75,33 @@ class NanoSocratesTransformer(nn.Module):
 
         # 3. Applica il layer di output finale
         return self.output(output)
+
+    def encoder_only_forward(self, input_ids, attention_mask=None):
+        """
+        Esegue solo l'encoder per l'MLM.
+        input_ids: LongTensor [B, T]
+        attention_mask: LongTensor [B, T] (1=token valido, 0=pad) opzionale
+        Ritorna logits [B, T, vocab_size]
+        """
+        # [B, T] -> [T, B]
+        src = input_ids.transpose(0, 1)
+
+        # padding mask
+        pad_id = self.embedding.padding_idx if self.embedding.padding_idx is not None else -1
+        if attention_mask is not None:
+            src_key_padding_mask = ~attention_mask.bool()
+        else:
+            if pad_id >= 0:
+                src_key_padding_mask = (input_ids == pad_id)
+            else:
+                src_key_padding_mask = torch.zeros_like(input_ids, dtype=torch.bool)
+
+        # Embedding + PositionalEncoding
+        src_emb = self.pos_encoder(self.embedding(src) * math.sqrt(self.d_model))  # [T, B, D]
+
+        # Encoder‑only
+        encoding = self.transformer.encoder(src=src_emb, src_key_padding_mask=src_key_padding_mask)  # [T, B, D]
+
+        # Proiezione a vocab e ritorno a [B, T, V]
+        logits = self.output(encoding).transpose(0, 1)  # [B, T, V]
+        return logits

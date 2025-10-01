@@ -4,8 +4,8 @@ from tokenizers.trainers import BpeTrainer
 from tokenizers.pre_tokenizers import Whitespace, Split, Sequence
 
 SPECIAL_TOKENS = [
-    "<UNK>", "<PAD>", "<MASK>",
-    "<SOS>", "<EOS>",  # Added SOS and EOS tokens
+    "<UNK>", "<PAD>", "<MASK>", "<MASKMLM>",
+    "<SOS>", "<EOS>",
     "<SOT>", "<EOT>",
     "<SUBJ>", "<PRED>", "<OBJ>",
     "<Text2RDF>", "<RDF2Text>", "<CONTINUERDF>",

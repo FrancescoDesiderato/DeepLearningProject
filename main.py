@@ -29,7 +29,7 @@ full_balancing = True       # Set to TRUE if you want truly balanced dataset (on
 warm_restart = True        # Set to TRUE if you want to use warm restarts
 overfit_test = False      # Set to TRUE if you want to overfit on a small dataset
 test_flag = True            # Set to TRUE if you want to test
-model_training = True      # Set to TRUE if you need to train the model, FALSE if you already have the weights
+model_training = False      # Set to TRUE if you need to train the model, FALSE if you already have the weights
 
 D_MODEL = 256               # Dimensione nascosta (embedding dimension)
 N_HEADS = 4                 # Numero di teste di attenzione (deve dividere D_MODEL)
@@ -56,7 +56,7 @@ if __name__ == '__main__':
         PAD_IDX = tokenizer.token_to_id("<PAD>")
     else:
         dataset = DatasetConstruction(page_size, test_enable, underscoreRemoval,
-                                      VOCAB_SIZE, MAX_LENGTH, BATCH_SIZE,full_balancing)
+                                      VOCAB_SIZE, MAX_LENGTH, BATCH_SIZE, full_balancing)
         tokenizer, train_dataset, val_dataset, test_dataset = dataset.pipeline()
         PAD_IDX = tokenizer.token_to_id("<PAD>")
 
@@ -126,7 +126,8 @@ if __name__ == '__main__':
             mlm_loader = DataLoader(mlm_dataset, batch_size=BATCH_SIZE, shuffle=True, collate_fn=mlm_collator)
 
             model.to(device)
-            model = train_mlm(mlm_loader, model)
+            model = train_mlm(mlm_loader, model, epochs=100)
+            model = model.transformer
 
         train_model(model=model,
                     train_loader=train_dataset,
