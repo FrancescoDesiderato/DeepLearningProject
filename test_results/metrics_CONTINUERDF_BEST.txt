@@ -1,0 +1,35 @@
+Task: CONTINUERDF
+Number of samples: 62
+==================================================
+precision: 0.257576
+recall: 0.165049
+f1: 0.201183
+
+==================================================
+Sample Predictions vs References:
+==================================================
+
+Example 1:
+Prediction: <SOT> <SUBJ> dbr :' night , Mother ( film ) <PRED> dbo : director <OBJ> dbr : Tom Moore ( director ) <EOT>
+Reference:  <SOT> <SUBJ> dbr :' night , Mother ( film ) <PRED> dbo : director <OBJ> dbr : Tom Moore ( director ) <EOT> <SOT> <SUBJ> dbr :' night , Mother ( film ) <PRED> dbo : producer <OBJ> dbr : Aaron Spelling <EOT>
+--------------------------------------------------
+
+Example 2:
+Prediction: <SOT> <SUBJ> dbr :' Til Madness Do Us Part <PRED> dbo : distributor <OBJ> dbr : Icarus Films <EOT>
+Reference:  <SOT> <SUBJ> dbr :' Til Madness Do Us Part <PRED> dbo : distributor <OBJ> dbr : Icarus Films <EOT> <SOT> <SUBJ> dbr :' Til Madness Do Us Part <PRED> dbo : editing <OBJ> dbr : Wang Bing ( director ) <EOT>
+--------------------------------------------------
+
+Example 3:
+Prediction: <SOT> <SUBJ> dbr :' t Was één April <PRED> dbo : writer <OBJ> dbr : Rudo Ritter <EOT>
+Reference:  <SOT> <SUBJ> dbr :' t Was één April <PRED> dbo : director <OBJ> dbr : Jacques van Tol <EOT>
+--------------------------------------------------
+
+Example 4:
+Prediction: <SOT> <SUBJ> dbr :' 49 –' 17 <PRED> dbo : starring <OBJ> dbr : Joseph W . Girard <EOT>
+Reference:  <SOT> <SUBJ> dbr :' 49 –' 17 <PRED> dbo : distributor <OBJ> dbr : Universal Pictures <EOT> <SOT> <SUBJ> dbr :' 49 –' 17 <PRED> dbo : starring <OBJ> dbr : Leo Pierson <EOT> <SOT> <SUBJ> dbr :' 49 –' 17 <PRED> dbo : starring <OBJ> dbr : William J . Dyer <EOT>
+--------------------------------------------------
+
+Example 5:
+Prediction: <SOT> <SUBJ> dbr :' Til We Meet Again <PRED> dbo : starring <OBJ> dbr : Merle Oberon <EOT>
+Reference:  <SOT> <SUBJ> dbr :' Til We Meet Again <PRED> dbo : musicComposer <OBJ> dbr : Heinz Roemheld <EOT>
+--------------------------------------------------

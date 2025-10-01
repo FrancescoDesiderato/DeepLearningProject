@@ -1,0 +1,35 @@
+Task: Text2RDF
+Number of samples: 8
+==================================================
+precision: 0.863636
+recall: 0.644068
+f1: 0.737864
+
+==================================================
+Sample Predictions vs References:
+==================================================
+
+Example 1:
+Prediction: <SOT> <SUBJ> dbr :' Twas Ever Thus <PRED> dbo : director <OBJ> dbr : Hobart Bosworth <EOT> <SOT> <SUBJ> dbr :' Twas Ever Thus <PRED> dbo : distributor <OBJ> dbr : Paramount Pictures <EOT> <SOT> <SUBJ> dbr :' Twas Ever Thus <PRED> dbo : language <OBJ> dbr : Silent film <EOT> <SOT> <SUBJ> dbr :' Twas ...
+Reference:  <SOT> <SUBJ> dbr :' Twas Ever Thus <PRED> dbo : director <OBJ> dbr : Hobart Bosworth <EOT> <SOT> <SUBJ> dbr :' Twas Ever Thus <PRED> dbo : distributor <OBJ> dbr : Paramount Pictures <EOT> <SOT> <SUBJ> dbr :' Twas Ever Thus <PRED> dbo : language <OBJ> dbr : Silent film <EOT> <SOT> <SUBJ> dbr :' Twas ...
+--------------------------------------------------
+
+Example 2:
+Prediction: <SOT> <SUBJ> dbr :... ing <PRED> dbo : country <OBJ> dbr : South Korea <EOT> <SOT> <SUBJ> dbr :... ing <PRED> dbo : musicComposer <OBJ> dbr : Bang Jun - seok <EOT> <SOT> <SUBJ> dbr :... ing <PRED> dbo : starring <OBJ> dbr : Lee Mi - sook <EOT> <SOT> <SUBJ> dbr :... ing <PRED> dbo : starring <OBJ> db...
+Reference:  <SOT> <SUBJ> dbr :... ing <PRED> dbo : country <OBJ> dbr : South Korea <EOT> <SOT> <SUBJ> dbr :... ing <PRED> dbo : musicComposer <OBJ> dbr : Bang Jun - seok <EOT> <SOT> <SUBJ> dbr :... ing <PRED> dbo : starring <OBJ> dbr : Lee Mi - sook <EOT> <SOT> <SUBJ> dbr :... ing <PRED> dbo : starring <OBJ> db...
+--------------------------------------------------
+
+Example 3:
+Prediction: <SOT> <SUBJ> dbr :$ 1 , 000 Reward <PRED> dbo : director <OBJ> dbr : Jack Harvey ( actor and director ) <EOT> <SOT> <SUBJ> dbr :$ 1 , 000 Reward <PRED> dbo : starring <OBJ> dbr : Madeline Fairbanks <EOT> <SOT> <SUBJ> dbr :$ 1 , 000 Reward <PRED> dbo : starring <OBJ> dbr : Marion Fairbanks <EOT> <SOT...
+Reference:  <SOT> <SUBJ> dbr :$ 1 , 000 Reward <PRED> dbo : director <OBJ> dbr : Jack Harvey ( actor and director ) <EOT> <SOT> <SUBJ> dbr :$ 1 , 000 Reward <PRED> dbo : starring <OBJ> dbr : Madeline Fairbanks <EOT> <SOT> <SUBJ> dbr :$ 1 , 000 Reward <PRED> dbo : starring <OBJ> dbr : Marion Fairbanks <EOT> <SOT...
+--------------------------------------------------
+
+Example 4:
+Prediction: <SOT> <SUBJ> dbr :* Corpus Callosum <PRED> dbo : director <OBJ> dbr : Michael Snow <EOT> <SOT> <SUBJ> dbr :* Corpus Callosum <PRED> dbo : starring <OBJ> dbr : Jacqueline Anderson <EOT> <SOT> <SUBJ> dbr :* Corpus Callosum <PRED> dbo : writer <OBJ> dbr : Michael Snow <EOT>
+Reference:  <SOT> <SUBJ> dbr :* Corpus Callosum <PRED> dbo : director <OBJ> dbr : Michael Snow <EOT> <SOT> <SUBJ> dbr :* Corpus Callosum <PRED> dbo : starring <OBJ> dbr : Jacqueline Anderson <EOT> <SOT> <SUBJ> dbr :* Corpus Callosum <PRED> dbo : writer <OBJ> dbr : Michael Snow <EOT>
+--------------------------------------------------
+
+Example 5:
+Prediction: <SOT> <SUBJ> dbr :... One Third of a Nation ... <PRED> dbo : director <OBJ> dbr : Dudley Murphy <EOT> <SOT> <SUBJ> dbr :... One Third of a Nation ... <PRED> dbo : distributor <OBJ> dbr : Paramount Pictures <EOT> <SOT> <SUBJ> dbr :... One Third of a Nation ... <PRED> dbo : editing <OBJ> dbr : W . Dun...
+Reference:  <SOT> <SUBJ> dbr :... One Third of a Nation ... <PRED> dbo : director <OBJ> dbr : Dudley Murphy <EOT> <SOT> <SUBJ> dbr :... One Third of a Nation ... <PRED> dbo : distributor <OBJ> dbr : Paramount Pictures <EOT> <SOT> <SUBJ> dbr :... One Third of a Nation ... <PRED> dbo : editing <OBJ> dbr : W . Dun...
+--------------------------------------------------

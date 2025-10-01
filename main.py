@@ -1,3 +1,5 @@
+from torch.utils.data import DataLoader
+from utils.mlm import CorpusMLMDataset, MLMPadCollator
 from transformers import PreTrainedTokenizerFast
 from dataset_construction import DatasetConstruction
 from dataset_utils.dataset import dataLoaderFromCSV
@@ -5,6 +7,7 @@ from model import NanoSocratesTransformer
 from utils.train import *
 import random
 import os
+from utils.mlm import MLM, train_mlm
 import numpy as np
 from utils.evaluation import run_test_evaluation
 
@@ -20,8 +23,9 @@ NUM_EPOCHS = 150            # Number of Epochs for Training
 csv_file = "processed_samples.csv"
 tokenizer_path = "tokenizer.json"
 
+dataset_created = False     # Set to TRUE if you have the csv data
+enable_mlm = False          # Set to TRUE if you want to use MLM during training
 full_balancing = True       # Set to TRUE if you want truly balanced dataset (only 1 sample for masking and continuerdf)
-dataset_created = True     # Set to TRUE if you have the csv data
 warm_restart = True        # Set to TRUE if you want to use warm restarts
 overfit_test = False      # Set to TRUE if you want to overfit on a small dataset
 test_flag = True            # Set to TRUE if you want to test
@@ -33,7 +37,7 @@ NUM_ENCODER_LAYERS = 6      # Numero di layer nell'encoder
 NUM_DECODER_LAYERS = 6      # Numero di layer nel decoder
 FFN_HID_DIM = 256           # Dimensione del layer nascosto nella Feed-Forward Network
 DROPOUT = 0.3
-weight_path = "nanosocrates_transformer_warm_500.pkl"
+weight_path = "nanosocrates_transformer.pkl"
 
 def set_global_seed(seed: int) -> None:
     os.environ["PYTHONHASHSEED"] = str(seed)
@@ -81,7 +85,6 @@ if __name__ == '__main__':
             num_decoder_layers=NUM_DECODER_LAYERS,
             ffn_hid_dim=FFN_HID_DIM
         )
-        # Informa il layer di embedding quale ID è per il padding
         model.embedding.padding_idx = PAD_IDX
         model.to(device)
 
@@ -90,6 +93,40 @@ if __name__ == '__main__':
             if not sanity_passed:
                 print("Sanity check fallito.")
                 exit(1)
+
+        if enable_mlm:
+            model = MLM(
+                transformer=model,
+                mask_prob=0.15,
+                replace_prob=0.9,
+                num_tokens=tokenizer.vocab_size,
+                random_token_prob=0.1,
+                mask_token_id=tokenizer.convert_tokens_to_ids("<MASKMLM>"),
+                pad_token_id=PAD_IDX,
+                mask_ignore_token_ids=[
+                    tokenizer.convert_tokens_to_ids("<PAD>"),
+                    tokenizer.convert_tokens_to_ids("<SOS>"),
+                    tokenizer.convert_tokens_to_ids("<EOS>"),
+                    tokenizer.convert_tokens_to_ids("<SOT>"),
+                    tokenizer.convert_tokens_to_ids("<EOT>"),
+                    tokenizer.convert_tokens_to_ids("<SUBJ>"),
+                    tokenizer.convert_tokens_to_ids("<PRED>"),
+                    tokenizer.convert_tokens_to_ids("<OBJ>"),
+                    tokenizer.convert_tokens_to_ids("<Text2RDF>"),
+                    tokenizer.convert_tokens_to_ids("<RDF2Text>"),
+                    tokenizer.convert_tokens_to_ids("<CONTINUERDF>"),
+                    tokenizer.convert_tokens_to_ids("<MASKTASK>"),
+                    tokenizer.convert_tokens_to_ids("<MASK>"),
+                ]
+            )
+
+            corpus_path = "dataset_utils/outputs/corpus.txt"
+            mlm_dataset = CorpusMLMDataset(corpus_path, tokenizer, MAX_LENGTH)
+            mlm_collator = MLMPadCollator(PAD_IDX)
+            mlm_loader = DataLoader(mlm_dataset, batch_size=BATCH_SIZE, shuffle=True, collate_fn=mlm_collator)
+
+            model.to(device)
+            model = train_mlm(mlm_loader, model)
 
         train_model(model=model,
                     train_loader=train_dataset,
