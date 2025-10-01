@@ -115,6 +115,9 @@ def _mask_accuracy_all(preds: List[str], refs: List[str],inps:List[str]) -> floa
     pattern = r'<SOT>\s*<SUBJ>\s*([^<]+)\s*<PRED>\s*([^<]+)\s*<OBJ>\s*([^<]+)\s*<EOT>'
     matches = re.findall(pattern, txt)
 
+    matches_triples = [{"subj": m[0].strip(), "pred": m[1].strip(), "obj": m[2].strip()} for m in matches]
+    matches_triples = [{k: v.replace("_", " ") for k, v in triple.items()} for triple in matches_triples]
+
     for i,p in zip(inps, preds):
         total += 1 #Count dei sample presenti
         pattern = re.compile(
@@ -136,11 +139,11 @@ def _mask_accuracy_all(preds: List[str], refs: List[str],inps:List[str]) -> floa
         m = pattern.search(p)
         if m:
             triple_p = {k: v.strip() for k, v in m.groupdict().items()}  # {'subj': 'dbr:$1,000_a_Touchdown', 'pred': 'dbo:starring', 'obj': 'dbr:Joe_E._Brown'}
-
+            #print(f"tripla predetta: {triple_p}")
         m = pattern_mask.search(i)
         if m:
             triple_i = {k: v.strip() for k, v in m.groupdict().items()} # {'subj': '<MASK>', 'pred': 'dbo:starring', 'obj': 'dbr:Joe_E._Brown'}
-
+            #print(f"Tripla in input {triple_i}")
         continueFlag = True
         for el_p,el_i in zip(triple_p, triple_i):
             if el_i == "<MASK>":
@@ -149,18 +152,20 @@ def _mask_accuracy_all(preds: List[str], refs: List[str],inps:List[str]) -> floa
                 continue
             else:
                 continueFlag = False
+                #print("Error in triple_i")
         #Controllo
         if continueFlag: #TODO: Controllo con i match nel corpus
-            for match in matches:
-                m = pattern.search(p)
-                if m:
-                    triple_m = {k: v.strip() for k, v in m.groupdict().items()}
+            for triple_m in matches_triples:
+                t_m = {k:t.replace(" ","") for k,t in triple_m.items()}
+                t_p = {k:t.replace(" ","") for k,t in triple_p.items()}
 
-                if all(k in triple_m and triple_m[k] == v for k, v in triple_i.items()):
+                if all(k in t_m and t_m[k] == v for k, v in t_p.items()):
+                    #print(f"Match: {t_m}")
+                    #print(f"Match prediction: {t_p}")
                     correct += 1
-                    break
+                    continue
 
-        return correct / total if total > 0 else 0.0
+    return correct / total if total > 0 else 0.0
 
 
 
@@ -339,7 +344,7 @@ def run_test_evaluation(model, test_dataset, tokenizer, device, MAX_LENGTH):
             # Greedy decode
             from utils.train import greedy_decode
             predictions = greedy_decode(model, src_t, tokenizer, max_len=MAX_LENGTH//2, device=device)
-
+            print("prediction calculated")
             # Prepare references (remove SOS token from beginning, EOS/PAD from end)
             references = []
 
@@ -363,7 +368,9 @@ def run_test_evaluation(model, test_dataset, tokenizer, device, MAX_LENGTH):
 
             src_tokens = src_t.tolist()
             src_tokens = [t for t in src_tokens if t != pad_id]
-            input_text_full_batch = tokenizer.decode(src_tokens, skip_special_tokens=False)
+            input_text_full_batch = []
+            input_text_full_batch.append([tokenizer.decode(t, skip_special_tokens=False) for t in src_tokens])
+            print("Input decoded")
             # Collect results
             all_input.extend(input_text_full_batch)
             all_tasks.extend(tasks)

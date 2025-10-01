@@ -1,41 +1,38 @@
 Task: RDF2Text
-Number of samples: 5
+Number of samples: 13
 ==================================================
-bleu: 0.081049
-meteor: 0.183600
-rouge1: 0.260033
-rouge2: 0.102092
-rougeL: 0.247238
-rougeLsum: 0.248241
-triple_precision: 0.000000
-triple_recall: 0.000000
-triple_f1: 0.000000
+bleu: 0.437720
+meteor: 0.548656
+rouge1: 0.597476
+rouge2: 0.546172
+rougeL: 0.579931
+rougeLsum: 0.580952
 
 ==================================================
 Sample Predictions vs References:
 ==================================================
 
 Example 1:
-Prediction: ' Neath Canadian Skies is a 1920 American silent Western film directed by William . It was released by William . The film directed by William . The film directed by William . The film directed by William . The film directed by William . The film directed by William . The film was released , and star...
-Reference:  $ 1 , 000 a Touchdown is a 1939 American comedy film directed by James P . Hogan , written by Delmer Daves , and starring Joe E . Brown , Martha Raye , Eric Blore , Susan Hayward , John Hartley and Joyce Mathews . It was released on October 4 , 1939 , by Paramount Pictures .
+Prediction: ... à la campagne is a French film directed by Manuel Poirier , released 5 April 1995 .
+Reference:  ... à la campagne is a French film directed by Manuel Poirier , released 5 April 1995 .
 --------------------------------------------------
 
 Example 2:
-Prediction: dbr :' Merika dbo : director dbr : Gil M . Portes
-Reference:  ' Merika is a 1984 drama film directed by Gil Portes and starring Nora Aunor and Bembol Roco . Aunor portrayed the role Mila , an Overseas Filipino Worker ( OFW ) who works as a nurse in America .
+Prediction: . com for Murder is a 2001 science fiction horror film written by Nico Mastorakis and Phill Marr and directed by Mastorakis , starring Nastassja Kinski , Nicollette Sheridan , Roger Daltrey , and Huey Lewis . After being screened at various film festivals , it was released direct - to - video on Jan...
+Reference:  . com for Murder is a 2001 science fiction horror film film written by Nico Mastorakis and Phill Marr and directed by Mastorakis , starring Nastassja Kinski , Nicollette Sheridan , Roger Daltrey , and Huey Lewis . After being screened at various film festivals , it was released direct - to - video o...
 --------------------------------------------------
 
 Example 3:
-Prediction: dbr :$ pent dbo : starring dbr : Jason London
-Reference:  $ pent is a 2000 drama film directed by Gil Cates Jr . and starring Jason London , Charlie Spradling , and Gil Cates Jr .
+Prediction: ? ( also written Tanda Tanya , meaning Question Mark ) is a 2011 Indonesian drama film directed by Hanung Bramantyo . It stars Revalina Sayuthi Temat , Reza Rahadian , Agus Kuncoro , Endhita , Rio Dewanto , and Hengky Sulaeman . The film focuses around Indonesia ' s religious pluralism , which often...
+Reference:  " Pimpernel " Smith ( released in the USA as Mister V ) is a 1941 British anti - Nazi thriller , produced and directed by its star Leslie Howard , which updates his role in The Scarlet Pimpernel ( 1934 ) from Revolutionary France to pre - Second World War Europe . The British Film Yearbook for 1945 ...
 --------------------------------------------------
 
 Example 4:
-Prediction: ' Neath the Arizona Skies is a 1920 American silent Western film directed by Paul Anderson . The film . The film was released in the film . The film was released in the film .
-Reference:  ' Neath the Arizona Skies is a 1934 Western film directed by Harry L . Fraser , produced by Lone Star Productions , released by Monogram Pictures and starring John Wayne . Wayne ' s character attempts to locate a little girl ' s father , so that she may claim a $ 50 , 000 Indian oil claim . The film...
+Prediction: 10 , 000 Hours is a 2013 Filipino action thriller film co - edited and directed by Joyce E . Bernal . The film stars Robin Padilla as a Philippine senator forced to go on the run . The film was released by Viva Films on December 25 , 2013 as an official entry of the 39th Metro Manila Film Festival ,...
+Reference:  10 , 000 Hours is a 2013 Filipino action thriller film co - edited and directed by Joyce E . Bernal . The film stars Robin Padilla as a Philippine senator forced to go on the run . The film was released by Viva Films on December 25 , 2013 as an official entry of the 39th Metro Manila Film Festival ,...
 --------------------------------------------------
 
 Example 5:
-Prediction: ' If Only ' Jim is a 2014 American silent of the film directed by Lynn Hershman Film , and starring . The film , and directed by Lynn of the film , and Ferd . The film , and Ferd .
-Reference:  ! Women Art Revolution is a 2010 documentary film directed by Lynn Hershman Leeson and distributed by Zeitgeist Films . It tracks the feminist art movement over 40 years through interviews with artists , curators , critics , and historians .
+Prediction: $ 30 , 000 is a 1920 American silent mystery film directed by Ernest C . Warde and starring J . Warren Kerrigan , Fritzi Brunette and Carl Stockdale .
+Reference:  $ 30 , 000 is a 1920 American silent mystery film directed by Ernest C . Warde and starring J . Warren Kerrigan , Fritzi Brunette and Carl Stockdale .
 --------------------------------------------------
