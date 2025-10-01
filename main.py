@@ -5,6 +5,9 @@ from transformers import PreTrainedTokenizerFast
 from dataset_construction import DatasetConstruction
 from dataset_utils.dataset import dataLoaderFromCSV
 from model import NanoSocratesTransformer
+"""
+Function to call to build the Transformer
+from model_from_scratch import build_transformer"""
 from utils.train import *
 import random
 import os
