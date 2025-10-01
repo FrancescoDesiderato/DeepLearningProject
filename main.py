@@ -1,12 +1,12 @@
-
 from transformers import PreTrainedTokenizerFast
-
 from dataset_construction import DatasetConstruction
 from dataset_utils.dataset import dataLoaderFromCSV
 from model import NanoSocratesTransformer
-import torch
 from utils.train import *
-from utils.evaluation import evaluate_tasks, run_test_evaluation
+import random
+import os
+import numpy as np
+from utils.evaluation import run_test_evaluation
 
 
 page_size = 5000            # Max number of pages
@@ -15,14 +15,15 @@ underscoreRemoval = True    # The Tokenizer breaks word every _ too
 VOCAB_SIZE = 32000          # Max Vocabulary Size
 MAX_LENGTH = 256            # Max Seq length
 BATCH_SIZE = 64              # Batch Size for Training
-NUM_EPOCHS = 100            # Number of Epochs for Training
+NUM_EPOCHS = 150            # Number of Epochs for Training
 
 csv_file = "processed_samples.csv"
 tokenizer_path = "tokenizer.json"
 
 dataset_created = False     # Set to TRUE if you have the csv data
+warm_restart = True        # Set to TRUE if you want to use warm restarts
 overfit_test = False      # Set to TRUE if you want to overfit on a small dataset
-test_flag = False            # Set to TRUE if you want to test
+test_flag = True            # Set to TRUE if you want to test
 model_training = False      # Set to TRUE if you need to train the model, FALSE if you already have the weights
 
 D_MODEL = 256               # Dimensione nascosta (embedding dimension)
@@ -31,12 +32,22 @@ NUM_ENCODER_LAYERS = 4      # Numero di layer nell'encoder
 NUM_DECODER_LAYERS = 4      # Numero di layer nel decoder
 FFN_HID_DIM = 256           # Dimensione del layer nascosto nella Feed-Forward Network
 DROPOUT = 0.3
-weight_path = "nanosocrates_transformer_150_wd.pkl"
+weight_path = "nanosocrates_transformer_warm_150.pkl"
 
+def set_global_seed(seed: int) -> None:
+    os.environ["PYTHONHASHSEED"] = str(seed)
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    torch.use_deterministic_algorithms(True, warn_only=True)
 
 if __name__ == '__main__':
     if dataset_created:
-        tokenizer, train_dataset, val_dataset, test_dataset = dataLoaderFromCSV(csv_file,tokenizer_path,MAX_LENGTH,BATCH_SIZE)
+        tokenizer, train_dataset, val_dataset, test_dataset = dataLoaderFromCSV(csv_file, tokenizer_path, MAX_LENGTH, BATCH_SIZE)
         PAD_IDX = tokenizer.token_to_id("<PAD>")
     else:
         dataset = DatasetConstruction(page_size, test_enable, underscoreRemoval, VOCAB_SIZE, MAX_LENGTH, BATCH_SIZE)
@@ -56,6 +67,9 @@ if __name__ == '__main__':
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     if model_training:
+        SEED = 42
+        # set_global_seed(SEED)
+
         model = NanoSocratesTransformer(
             vocab_size=tokenizer.vocab_size,
             d_model=D_MODEL,
@@ -79,7 +93,8 @@ if __name__ == '__main__':
                     val_loader=val_dataset,
                     tokenizer=tokenizer,
                     num_epochs=NUM_EPOCHS,
-                    device=device)
+                    device=device,
+                    warm_restart=warm_restart)
 
         # Salva il modello addestrato
         torch.save(model.state_dict(), "nanosocrates_transformer.pkl")

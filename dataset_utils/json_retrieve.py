@@ -66,7 +66,7 @@ class JSONRetrieve:
             film_uris = [line.strip() for line in f if line.strip()]
 
         if self.test_enable:
-            film_uris = film_uris[:150] # TODO da rimuovere, solo per test
+            film_uris = film_uris[:500] # TODO da rimuovere, solo per test
         print(f"Letti {len(film_uris)} URI di film da '{self.input_filename}'.")
 
         # whitelist dei predicati. Da capire se sono troppi

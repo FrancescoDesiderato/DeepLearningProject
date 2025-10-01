@@ -1,6 +1,6 @@
 import torch
-import random
-from utils.evaluation import evaluate_tasks
+from torch.optim.lr_scheduler import CosineAnnealingLR
+
 
 def greedy_decode(model, src, tokenizer, max_len=128, device='cuda'):
     """
@@ -134,10 +134,12 @@ def run_validation(model, val_loader, tokenizer, device, num_examples=5):
 
     return avg_val_loss
 
-def train_model(model, train_loader, val_loader, num_epochs, device, tokenizer):
+def train_model(model, train_loader, val_loader, num_epochs, device, tokenizer, warm_restart):
+
     actual_vocab_size = tokenizer.vocab_size
-    criterion = torch.nn.CrossEntropyLoss(ignore_index=model.embedding.padding_idx, label_smoothing=0.1)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-5,weight_decay=0.01)
+    criterion = torch.nn.CrossEntropyLoss(ignore_index=model.embedding.padding_idx)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=0.001,weight_decay=0.01)
+    scheduler = CosineAnnealingLR(optimizer=optimizer, T_max=num_epochs, eta_min=1e-5)
 
     model.train()
     for epoch in range(num_epochs):
@@ -166,6 +168,9 @@ def train_model(model, train_loader, val_loader, num_epochs, device, tokenizer):
         if (epoch + 1) % 5 == 0:
             avg_val_loss = run_validation(model, val_loader, tokenizer, device)
             torch.save(model.state_dict(), "nanosocrates_transformer.pkl")
+
+        if warm_restart:
+            scheduler.step()
         model.train()
 
 
