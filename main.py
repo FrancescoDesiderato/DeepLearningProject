@@ -21,19 +21,19 @@ csv_file = "processed_samples.csv"
 tokenizer_path = "tokenizer.json"
 
 full_balancing = True       # Set to TRUE if you want truly balanced dataset (only 1 sample for masking and continuerdf)
-dataset_created = False     # Set to TRUE if you have the csv data
+dataset_created = True     # Set to TRUE if you have the csv data
 warm_restart = True        # Set to TRUE if you want to use warm restarts
 overfit_test = False      # Set to TRUE if you want to overfit on a small dataset
-test_flag = False            # Set to TRUE if you want to test
-model_training = False      # Set to TRUE if you need to train the model, FALSE if you already have the weights
+test_flag = True            # Set to TRUE if you want to test
+model_training = True      # Set to TRUE if you need to train the model, FALSE if you already have the weights
 
 D_MODEL = 256               # Dimensione nascosta (embedding dimension)
 N_HEADS = 4                 # Numero di teste di attenzione (deve dividere D_MODEL)
-NUM_ENCODER_LAYERS = 4      # Numero di layer nell'encoder
-NUM_DECODER_LAYERS = 4      # Numero di layer nel decoder
+NUM_ENCODER_LAYERS = 6      # Numero di layer nell'encoder
+NUM_DECODER_LAYERS = 6      # Numero di layer nel decoder
 FFN_HID_DIM = 256           # Dimensione del layer nascosto nella Feed-Forward Network
 DROPOUT = 0.3
-weight_path = "nanosocrates_transformer_150_wd.pkl"
+weight_path = "nanosocrates_transformer_warm_500.pkl"
 
 def set_global_seed(seed: int) -> None:
     os.environ["PYTHONHASHSEED"] = str(seed)
@@ -66,7 +66,8 @@ if __name__ == '__main__':
     print(f"Decoded: {tokenizer.decode(tokens, skip_special_tokens=False)}")
 
     # Sposta il modello sulla GPU se disponibile
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+    print(device)
 
     if model_training:
         SEED = 42
