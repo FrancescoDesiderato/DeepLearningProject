@@ -11,12 +11,13 @@ def serialize_triple(triple_dict):
     return f"<SOT> <SUBJ> {s} <PRED> {p} <OBJ> {o} <EOT>"
 
 class DatasetFormatting:
-    def __init__(self,dataset_filename,tokenizer_path,csv_filename, MAX_LENGTH, BATCH_SIZE):
+    def __init__(self,dataset_filename,tokenizer_path,csv_filename, MAX_LENGTH, BATCH_SIZE,full_balancing):
         self.dataset_filename = dataset_filename
         self.tokenizer_path = tokenizer_path
         self.MAX_LENGTH = MAX_LENGTH
         self.csv_filename = csv_filename
         self.BATCH_SIZE = BATCH_SIZE
+        self.full_balancing = full_balancing
 
     def compute(self, seed=42):
         with open(self.dataset_filename, "r", encoding="utf-8") as f:
@@ -47,21 +48,60 @@ class DatasetFormatting:
                 processed_samples.append({"task":"RDF2Text","input": input_text2, "target": target_text2})
 
             # RDF Completion 1 (Masking) - Add SOS/EOS tokens to target
-            for triple in triples:
+            if not self.full_balancing:
+                for triple in triples:
+                    components = ["subject", "predicate", "object"]
+
+                    # maschera un solo componente
+                    component_to_mask = random.choice(components)
+                    masked_triple_single = triple.copy()
+                    masked_triple_single[component_to_mask] = "<MASK>"
+
+                    input_text3_single = f"<MASKTASK> {serialize_triple(masked_triple_single)}"
+                    target_text3_single = f"<SOS> {serialize_triple(triple)} <EOS>"
+                    processed_samples.append(
+                        {"task":"MASK","input": input_text3_single, "target": target_text3_single})
+
+                    # maschera due componenti
+                    if random.random() < 0.3 and len(components) >= 2:
+                        components_to_mask = random.sample(components, 2)
+                        masked_triple_double = triple.copy()
+                        for comp in components_to_mask:
+                            masked_triple_double[comp] = "<MASK>"
+
+                        input_text3_double = f"<MASKTASK> {serialize_triple(masked_triple_double)}"
+                        target_text3_double = f"<SOS> {serialize_triple(triple)} <EOS>"
+                        processed_samples.append(
+                            {"task":"MASK","input": input_text3_double, "target": target_text3_double})
+
+                    # RDF Completion 2 (Continuation) - Add SOS/EOS tokens to target
+                    if len(triples) >= 2:
+                        indices = list(range(len(triples)))
+                        # scegli 1..len(triples)-1 triple di contesto
+                        ctx_count = random.randint(1, len(triples) - 1)
+                        ctx_indices = sorted(random.sample(indices, ctx_count))
+                        remaining = [i for i in indices if i not in ctx_indices]
+
+                        # scegli 1..K triple target (limita K per controllare la lunghezza)
+                        max_target = min(len(remaining), 3)  # limite pratico
+                        tgt_count = random.randint(1, max_target)
+                        tgt_indices = sorted(random.sample(remaining, tgt_count))
+
+                        context_triples = [serialize_triple(triples[i]) for i in ctx_indices]
+                        target_triples = [serialize_triple(triples[i]) for i in tgt_indices]
+
+                        input_text4 = f"<CONTINUERDF> {' '.join(context_triples)}"
+                        target_text4 = f"<SOS> {' '.join(target_triples)} <EOS>"
+
+                        processed_samples.append(
+                            {"task": "CONTINUERDF", "input": input_text4, "target": target_text4}
+                        )
+            else:
+                triple = random.choice(triples)
                 components = ["subject", "predicate", "object"]
 
-                # maschera un solo componente
-                component_to_mask = random.choice(components)
-                masked_triple_single = triple.copy()
-                masked_triple_single[component_to_mask] = "<MASK>"
-
-                input_text3_single = f"<MASKTASK> {serialize_triple(masked_triple_single)}"
-                target_text3_single = f"<SOS> {serialize_triple(triple)} <EOS>"
-                processed_samples.append(
-                    {"task":"MASK","input": input_text3_single, "target": target_text3_single})
-
-                # maschera due componenti
                 if random.random() < 0.3 and len(components) >= 2:
+                    # Con una certa probabilità maschera 2 componenti
                     components_to_mask = random.sample(components, 2)
                     masked_triple_double = triple.copy()
                     for comp in components_to_mask:
@@ -70,9 +110,19 @@ class DatasetFormatting:
                     input_text3_double = f"<MASKTASK> {serialize_triple(masked_triple_double)}"
                     target_text3_double = f"<SOS> {serialize_triple(triple)} <EOS>"
                     processed_samples.append(
-                        {"task":"MASK","input": input_text3_double, "target": target_text3_double})
+                        {"task": "MASK", "input": input_text3_double, "target": target_text3_double})
 
-                # RDF Completion 2 (Continuation) - Add SOS/EOS tokens to target
+                else:
+                    # maschera un solo componente
+                    component_to_mask = random.choice(components)
+                    masked_triple_single = triple.copy()
+                    masked_triple_single[component_to_mask] = "<MASK>"
+
+                    input_text3_single = f"<MASKTASK> {serialize_triple(masked_triple_single)}"
+                    target_text3_single = f"<SOS> {serialize_triple(triple)} <EOS>"
+                    processed_samples.append(
+                        {"task": "MASK", "input": input_text3_single, "target": target_text3_single})
+
                 if len(triples) >= 2:
                     indices = list(range(len(triples)))
                     # scegli 1..len(triples)-1 triple di contesto

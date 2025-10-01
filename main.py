@@ -20,10 +20,11 @@ NUM_EPOCHS = 150            # Number of Epochs for Training
 csv_file = "processed_samples.csv"
 tokenizer_path = "tokenizer.json"
 
+full_balancing = True       # Set to TRUE if you want truly balanced dataset (only 1 sample for masking and continuerdf)
 dataset_created = False     # Set to TRUE if you have the csv data
 warm_restart = True        # Set to TRUE if you want to use warm restarts
 overfit_test = False      # Set to TRUE if you want to overfit on a small dataset
-test_flag = True            # Set to TRUE if you want to test
+test_flag = False            # Set to TRUE if you want to test
 model_training = False      # Set to TRUE if you need to train the model, FALSE if you already have the weights
 
 D_MODEL = 256               # Dimensione nascosta (embedding dimension)
@@ -32,7 +33,7 @@ NUM_ENCODER_LAYERS = 4      # Numero di layer nell'encoder
 NUM_DECODER_LAYERS = 4      # Numero di layer nel decoder
 FFN_HID_DIM = 256           # Dimensione del layer nascosto nella Feed-Forward Network
 DROPOUT = 0.3
-weight_path = "nanosocrates_transformer_warm_150.pkl"
+weight_path = "nanosocrates_transformer_150_wd.pkl"
 
 def set_global_seed(seed: int) -> None:
     os.environ["PYTHONHASHSEED"] = str(seed)
@@ -50,7 +51,8 @@ if __name__ == '__main__':
         tokenizer, train_dataset, val_dataset, test_dataset = dataLoaderFromCSV(csv_file, tokenizer_path, MAX_LENGTH, BATCH_SIZE)
         PAD_IDX = tokenizer.token_to_id("<PAD>")
     else:
-        dataset = DatasetConstruction(page_size, test_enable, underscoreRemoval, VOCAB_SIZE, MAX_LENGTH, BATCH_SIZE)
+        dataset = DatasetConstruction(page_size, test_enable, underscoreRemoval,
+                                      VOCAB_SIZE, MAX_LENGTH, BATCH_SIZE,full_balancing)
         tokenizer, train_dataset, val_dataset, test_dataset = dataset.pipeline()
         PAD_IDX = tokenizer.token_to_id("<PAD>")
 
