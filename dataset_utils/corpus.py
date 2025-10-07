@@ -1,9 +1,5 @@
 import json
-def serialize_triple(triple_dict):
-    s = triple_dict['subject']
-    p = triple_dict['predicate']
-    o = triple_dict['object']
-    return f"<SOT> <SUBJ> {s} <PRED> {p} <OBJ> {o} <EOT>"
+from dataset_utils.dataset_formatting import serialize_triple
 
 
 class Corpus:
