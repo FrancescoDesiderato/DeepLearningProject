@@ -5,8 +5,8 @@ from utils.evaluation import run_test_evaluation
 from utils.train import train_model
 from model_interleaved import NanoSocratesTransformerInterleaved
 
-csv_file = "processed_samples.csv"
-tokenizer_path = "tokenizer.json"
+csv_file = "../processed_samples.csv"
+tokenizer_path = "../tokenizer.json"
 
 MAX_LENGTH = 256
 BATCH_SIZE = 64
@@ -34,7 +34,8 @@ model = NanoSocratesTransformerInterleaved(
             num_decoder_layers=NUM_DECODER_LAYERS,
             ffn_hid_dim=FFN_HID_DIM,
             dropout=DROPOUT,
-            local_attention_window_size=5
+            local_attention_window_size=5,
+            padding_idx=PAD_IDX
         )
 model.embedding.padding_idx = PAD_IDX
 model.to(device)

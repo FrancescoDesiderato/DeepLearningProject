@@ -5,7 +5,10 @@ from dataset_utils.bpe import BPECustom
 from dataset_utils.dataset_formatting import DatasetFormatting
 
 class DatasetConstruction:
-    def __init__(self, page_size = 5000, test_enable = True,underscoreRemoval = True, VOCAB_SIZE = 32000, MAX_LENGTH = 512, BATCH_SIZE = 8, full_balancing = False, dataset_size = None):
+    def __init__(self, page_size = 5000,
+                 test_enable = True, underscoreRemoval = True,
+                 VOCAB_SIZE = 32000, MAX_LENGTH = 512, BATCH_SIZE = 8,
+                 full_balancing = False, dataset_size = None, n_film = 150):
         self.page_size = page_size
         self.test_enable = test_enable
         self.underscoreRemoval = underscoreRemoval
@@ -14,16 +17,17 @@ class DatasetConstruction:
         self.BATCH_SIZE = BATCH_SIZE
         self.full_balancing = full_balancing
         self.dataset_size = dataset_size
+        self.n_film = n_film
 
     def pipeline(self):
         #1-STEP: ENDPOINT
-        output_filename_uri = "dataset_utils/film_uris_1500.txt"
-        """endpointClass = Endpoint(self.page_size,output_filename_uri)
-        endpointClass.compute()"""
+        output_filename_uri = "dataset_utils/outputs/film_uris.txt"
+        endpointClass = Endpoint(self.page_size,output_filename_uri)
+        endpointClass.compute()
 
         #2-STEP: JSON RETRIEVE
-        output_filename_json = "dataset_utils/final_paired_dataset_1500.json"
-        jsonRetrieveClass = JSONRetrieve(self.test_enable, output_filename_uri,output_filename_json)
+        output_filename_json = "dataset_utils/outputs/final_paired_dataset.json"
+        jsonRetrieveClass = JSONRetrieve(self.test_enable, output_filename_uri,output_filename_json, self.n_film)
         jsonRetrieveClass.compute()
 
         #3-STEP: CORPUS

@@ -3,25 +3,16 @@ import torch.nn as nn
 import math
 from utils.positional_encoding import PositionalEncoding
 
-def _generate_local_attention_mask(seq_len, window_size):
-    """
-    Genera una maschera per l'attenzione locale a finestra.
-    I token possono "vedere" solo i token entro `window_size` a sinistra e a destra.
-    """
-    mask = torch.full((seq_len, seq_len), float('-inf'))
-    # Crea una banda diagonale di zeri
+def _generate_local_attention_mask(seq_len: int, window_size: int, device=None, dtype=torch.float32):
+    # mask additiva: 0 = consentito, -1e9 = mascherato
+    mask = torch.full((seq_len, seq_len), fill_value=-1e9, dtype=dtype, device=device)
     for i in range(seq_len):
         start = max(0, i - window_size)
         end = min(seq_len, i + window_size + 1)
-        mask[i, start:end] = 0
+        mask[i, start:end] = 0.0
     return mask
 
-
 class LocalAttentionTransformerEncoderLayer(nn.Module):
-    """
-    Un TransformerEncoderLayer che forza l'uso di una maschera di attenzione locale.
-    """
-
     def __init__(self, d_model, n_heads, ffn_hid_dim, window_size, dropout=0.1):
         super().__init__()
         self.window_size = window_size
@@ -36,22 +27,34 @@ class LocalAttentionTransformerEncoderLayer(nn.Module):
         self.activation = nn.ReLU()
 
     def forward(self, src, src_key_padding_mask=None):
-        seq_len = src.shape[0]
-        # Genera la maschera di attenzione locale ad ogni forward
-        local_mask = _generate_local_attention_mask(seq_len, self.window_size).to(src.device)
+        # src: [S, B, E]; src_key_padding_mask: [B, S] (True = PAD)
+        S, B, _ = src.shape
+        local_mask = _generate_local_attention_mask(S, self.window_size, device=src.device, dtype=src.dtype)
 
-        # Self-attention locale
-        src2 = self.self_attn(src, src, src,
-                              attn_mask=local_mask,
-                              key_padding_mask=src_key_padding_mask)[0]
-        src = src + self.dropout1(src2)
-        src = self.norm1(src)
+        # Attenzione locale senza key_padding_mask per evitare righe totalmente mascherate
+        src2 = self.self_attn(src, src, src, attn_mask=local_mask, key_padding_mask=None)[0]
 
-        # Feed-forward
+        # Maschera esplicita delle posizioni di pad (zero-out) su query/output
+        if src_key_padding_mask is not None:
+            pad = src_key_padding_mask.transpose(0, 1).unsqueeze(-1)  # [S, B, 1]
+            src2 = src2.masked_fill(pad, 0.0)
+            src = src.masked_fill(pad, 0.0)
+
+        src = self.norm1(src + self.dropout1(src2))
+
         src2 = self.linear2(self.dropout(self.activation(self.linear1(src))))
-        src = src + self.dropout2(src2)
-        src = self.norm2(src)
+        if src_key_padding_mask is not None:
+            pad = src_key_padding_mask.transpose(0, 1).unsqueeze(-1)
+            src2 = src2.masked_fill(pad, 0.0)
+            src = src.masked_fill(pad, 0.0)
+
+        src = self.norm2(src + self.dropout2(src2))
+
+        if src_key_padding_mask is not None:
+            pad = src_key_padding_mask.transpose(0, 1).unsqueeze(-1)
+            src = src.masked_fill(pad, 0.0)
         return src
+
 
 class InterleavedEncoder(nn.Module):
     def __init__(self, num_layers, d_model, n_heads, ffn_hid_dim, window_size, dropout=0.1):
@@ -60,12 +63,10 @@ class InterleavedEncoder(nn.Module):
         self.globalAttentionTransformerEncoderLayer = nn.TransformerEncoderLayer
         for i in range(num_layers):
             if i % 2 == 0:
-                # Layer pari: Attenzione Locale
                 layer = LocalAttentionTransformerEncoderLayer(
                     d_model, n_heads, ffn_hid_dim, window_size, dropout
                 )
             else:
-                # Layer dispari: Attenzione Globale
                 layer = self.globalAttentionTransformerEncoderLayer(
                     d_model=d_model,
                     nhead=n_heads,
@@ -82,7 +83,6 @@ class InterleavedEncoder(nn.Module):
             output = layer(output, src_key_padding_mask=src_key_padding_mask)
         return self.norm(output)
 
-
 class NanoSocratesTransformerInterleaved(nn.Module):
     def __init__(self,
                  vocab_size,
@@ -91,19 +91,15 @@ class NanoSocratesTransformerInterleaved(nn.Module):
                  num_encoder_layers,
                  num_decoder_layers,
                  ffn_hid_dim,
-                 local_attention_window_size,  # <-- Nuovo parametro!
+                 local_attention_window_size,
                  dropout=0.1,
-                 padding_idx=0):  # Aggiunto per gestire il padding
+                 padding_idx=0):
         super().__init__()
         self.d_model = d_model
 
         self.embedding = nn.Embedding(vocab_size, d_model, padding_idx=padding_idx)
         self.pos_encoder = PositionalEncoding(d_model)
 
-        # --- MODIFICA CHIAVE ---
-        # Sostituiamo nn.Transformer con i nostri moduli personalizzati
-
-        # 1. Il nostro nuovo Encoder Interleaved
         self.encoder = InterleavedEncoder(
             num_layers=num_encoder_layers,
             d_model=d_model,
@@ -113,7 +109,6 @@ class NanoSocratesTransformerInterleaved(nn.Module):
             dropout=dropout
         )
 
-        # 2. Un Decoder standard (potremmo personalizzare anche questo, ma iniziamo così)
         decoder_layer = nn.TransformerDecoderLayer(
             d_model=d_model,
             nhead=n_heads,
@@ -122,61 +117,46 @@ class NanoSocratesTransformerInterleaved(nn.Module):
             batch_first=False
         )
         self.decoder = nn.TransformerDecoder(decoder_layer, num_layers=num_decoder_layers)
-
-        # ------------------------
-
         self.output = nn.Linear(d_model, vocab_size)
 
     def _generate_square_subsequent_mask(self, sz):
-        return torch.triu(torch.full((sz, sz), float('-inf')), diagonal=1)
+        # True = vieta attendere posizioni future
+        return torch.triu(torch.ones(sz, sz, dtype=torch.bool), diagonal=1)
 
     def forward(self, src, tgt):
-        """
-        src: Tensor, shape [src_seq_len, batch_size]
-        tgt: Tensor, shape [tgt_seq_len, batch_size]
-        """
-        # Creazione maschere
-        tgt_seq_len = tgt.shape[0]
-        tgt_mask = self._generate_square_subsequent_mask(tgt_seq_len).to(src.device)
+        # src/tgt: [S, B]
+        src_padding_mask = (src == self.embedding.padding_idx).transpose(0, 1)  # [B, S]
+        tgt_padding_mask = (tgt == self.embedding.padding_idx).transpose(0, 1)  # [B, T]
 
-        src_padding_mask = (src == self.embedding.padding_idx).transpose(0, 1)
-        tgt_padding_mask = (tgt == self.embedding.padding_idx).transpose(0, 1)
+        # Evita righe completamente mascherate
+        if src_padding_mask.all(dim=1).any():
+            idx = torch.where(src_padding_mask.all(dim=1))[0]
+            src_padding_mask[idx, 0] = False
+        if tgt_padding_mask.all(dim=1).any():
+            idx = torch.where(tgt_padding_mask.all(dim=1))[0]
+            tgt_padding_mask[idx, 0] = False
 
-        # Embedding + Positional Encoding
         src_emb = self.pos_encoder(self.embedding(src) * math.sqrt(self.d_model))
         tgt_emb = self.pos_encoder(self.embedding(tgt) * math.sqrt(self.d_model))
+        tgt_mask = self._generate_square_subsequent_mask(tgt.shape[0]).to(src.device)
 
-        # --- NUOVO FLUSSO FORWARD ---
-        # 1. Passa l'input attraverso l'encoder
         memory = self.encoder(src_emb, src_key_padding_mask=src_padding_mask)
-
-        # 2. Il decoder usa l'output dell'encoder ('memory') per la cross-attention
-        output = self.decoder(
-            tgt_emb,
-            memory,
+        out = self.decoder(
+            tgt=tgt_emb,
+            memory=memory,
             tgt_mask=tgt_mask,
             tgt_key_padding_mask=tgt_padding_mask,
-            memory_key_padding_mask=src_padding_mask  # Maschera per la memoria dell'encoder
+            memory_key_padding_mask=src_padding_mask
         )
-        # --------------------------
+        return self.output(out)
 
-        return self.output(output)
-
-    # La funzione encoder_only_forward ora è molto più semplice
     def encoder_only_forward(self, input_ids, attention_mask=None):
-        """
-        input_ids: LongTensor [B, T]
-        """
-        src = input_ids.transpose(0, 1)  # [T, B]
-
+        src = input_ids.transpose(0, 1)
         if attention_mask is not None:
             src_key_padding_mask = ~attention_mask.bool()
         else:
             src_key_padding_mask = (input_ids == self.embedding.padding_idx)
-
-        src_emb = self.pos_encoder(self.embedding(src) * math.sqrt(self.d_model))  # [T, B, D]
-
-        encoding = self.encoder(src=src_emb, src_key_padding_mask=src_key_padding_mask)  # [T, B, D]
-
-        logits = self.output(encoding).transpose(0, 1)  # [B, T, V]
+        src_emb = self.pos_encoder(self.embedding(src) * math.sqrt(self.d_model))
+        encoding = self.encoder(src=src_emb, src_key_padding_mask=src_key_padding_mask)
+        logits = self.output(encoding).transpose(0, 1)
         return logits

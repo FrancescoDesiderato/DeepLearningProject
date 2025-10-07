@@ -2,7 +2,6 @@ from SPARQLWrapper import SPARQLWrapper, JSON
 import json
 from tqdm import tqdm
 
-
 dbpedia_endpoint_url = "https://dbpedia.org/sparql"
 sparql = SPARQLWrapper(dbpedia_endpoint_url)
 sparql.setReturnFormat(JSON)
@@ -22,11 +21,11 @@ PREDICATE_WHITELIST = [
 ABSTRACT_URI = "http://dbpedia.org/ontology/abstract"
 
 class JSONRetrieve:
-    def __init__(self,test_enable,input_filename,output_filename):
+    def __init__(self, test_enable, input_filename, output_filename, n_film):
         self.test_enable = test_enable
         self.input_filename = input_filename
         self.output_filename = output_filename
-
+        self.n_film = n_film
 
     # conserviamo dell'abstract solo il primo paragrafo
     def get_first_paragraph(self,full_text):
@@ -66,10 +65,9 @@ class JSONRetrieve:
             film_uris = [line.strip() for line in f if line.strip()]
 
         if self.test_enable:
-            film_uris = film_uris[:500] # TODO da rimuovere, solo per test
+            film_uris = film_uris[:self.n_film]
         print(f"Letti {len(film_uris)} URI di film da '{self.input_filename}'.")
 
-        # whitelist dei predicati. Da capire se sono troppi
         final_dataset = []
 
         for i, film_uri in enumerate(tqdm(film_uris, desc="Creando il dataset finale")):
@@ -112,8 +110,6 @@ class JSONRetrieve:
                             "object": self.get_short_name(obj_info['value'])
                         })
 
-
-                # TODO da capire se mantenere o no
                 first_paragraph = self.get_first_paragraph(film_abstract_text)
 
                 # se abbiamo trovato l'abstract e almeno una tripla, è una valida entry del dataset

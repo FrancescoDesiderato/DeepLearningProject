@@ -8,7 +8,7 @@ sparql.setReturnFormat(JSON)
 
 class Endpoint:
     def __init__(self,page_size,output_filename):
-        self.page_size = page_size  # Impostiamo la dimensione della pagina
+        self.page_size = page_size  # dimensione della pagina
         self.output_filename = output_filename
 
     def compute(self):

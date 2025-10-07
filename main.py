@@ -1,4 +1,3 @@
-import torch
 from torch.utils.data import DataLoader
 from utils.mlm import CorpusMLMDataset, MLMPadCollator
 from transformers import PreTrainedTokenizerFast
@@ -17,7 +16,8 @@ from utils.evaluation import run_test_evaluation
 
 
 page_size = 5000            # Max number of pages
-test_enable = False          # Toy Dataset Flag
+test_enable = True          # Toy Dataset Flag
+n_film = 150
 underscoreRemoval = True    # The Tokenizer breaks word every _ too
 VOCAB_SIZE = 32000          # Max Vocabulary Size
 MAX_LENGTH = 256            # Max Seq length
@@ -25,25 +25,25 @@ BATCH_SIZE = 64              # Batch Size for Training
 NUM_EPOCHS = 150            # Number of Epochs for Training
 dataset_size = 1500        # Set to a number to limit the dataset size (for testing purposes)
 
-csv_file = "processed_samples.csv"
-tokenizer_path = "tokenizer.json"
+csv_file = "150_dataset/processed_samples_150.csv"
+tokenizer_path = "500_dataset/tokenizer_500.json"
 
 dataset_created = True     # Set to TRUE if you have the csv data
-enable_mlm = True          # Set to TRUE if you want to use MLM during training
+enable_mlm = False          # Set to TRUE if you want to use MLM during training
 mlm_trained = False         # Set to TRUE if you want to load a pre-trained MLM model
 full_balancing = True       # Set to TRUE if you want truly balanced dataset (only 1 sample for masking and continuerdf)
 warm_restart = True        # Set to TRUE if you want to use warm restarts
 overfit_test = False      # Set to TRUE if you want to overfit on a small dataset
 test_flag = True            # Set to TRUE if you want to test
-model_training = True      # Set to TRUE if you need to train the model, FALSE if you already have the weights
+model_training = False      # Set to TRUE if you need to train the model, FALSE if you already have the weights
 
 D_MODEL = 256               # Dimensione nascosta (embedding dimension)
 N_HEADS = 4                 # Numero di teste di attenzione (deve dividere D_MODEL)
-NUM_ENCODER_LAYERS = 6      # Numero di layer nell'encoder
-NUM_DECODER_LAYERS = 6      # Numero di layer nel decoder
+NUM_ENCODER_LAYERS = 4      # Numero di layer nell'encoder
+NUM_DECODER_LAYERS = 4      # Numero di layer nel decoder
 FFN_HID_DIM = 256           # Dimensione del layer nascosto nella Feed-Forward Network
 DROPOUT = 0.3
-weight_path = "nanosocrates_transformer.pkl"
+weight_path = "models/nanosocrates_transformer(12).pkl"
 
 def set_global_seed(seed: int) -> None:
     os.environ["PYTHONHASHSEED"] = str(seed)
@@ -62,7 +62,7 @@ if __name__ == '__main__':
         PAD_IDX = tokenizer.token_to_id("<PAD>")
     else:
         dataset = DatasetConstruction(page_size, test_enable, underscoreRemoval,
-                                      VOCAB_SIZE, MAX_LENGTH, BATCH_SIZE, full_balancing, dataset_size)
+                                      VOCAB_SIZE, MAX_LENGTH, BATCH_SIZE, full_balancing, dataset_size, n_film)
         tokenizer, train_dataset, val_dataset, test_dataset = dataset.pipeline()
         PAD_IDX = tokenizer.token_to_id("<PAD>")
 
@@ -137,7 +137,17 @@ if __name__ == '__main__':
             model = model.transformer
 
         if mlm_trained:
-            model.load_state_dict(torch.load("nanosocrates_mlm.pkl", map_location=device).state_dict())
+            mlm_state_dict = torch.load("mlm_model_166.pt", map_location=device)
+
+            # Estrai solo i pesi del transformer interno
+            transformer_state_dict = {}
+            for key, value in mlm_state_dict.items():
+                if key.startswith('transformer.'):
+                    # Rimuovi il prefisso 'transformer.' per adattarlo al NanoSocratesTransformer
+                    new_key = key[12:]  # Rimuove 'transformer.'
+                    transformer_state_dict[new_key] = value
+
+            model.load_state_dict(transformer_state_dict)
             model.to(device)
 
         train_model(model=model,
@@ -146,7 +156,8 @@ if __name__ == '__main__':
                     tokenizer=tokenizer,
                     num_epochs=NUM_EPOCHS,
                     device=device,
-                    warm_restart=warm_restart)
+                    warm_restart=warm_restart,
+                    pad_idx=model.embedding.padding_idx)
 
         # Salva il modello addestrato
         torch.save(model.state_dict(), "nanosocrates_transformer.pkl")
