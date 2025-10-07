@@ -8,26 +8,27 @@ from dataclasses import dataclass
 @dataclass
 class ModelArgs:
     # Argomenti del modello standard
-    dim: int = 256  # D_MODEL
+    dim: int = 1024  # D_MODEL
     vocab_size: int = 30000  # Esempio
     n_layers: int = 6  # NUM_ENCODER/DECODER_LAYERS
     n_heads: int = 4  # N_HEADS
     n_kv_heads: int = 4  # Per semplicità, usiamo MHA (n_heads == n_kv_heads)
-    padding_idx: int = 0
+    padding_idx: int = 0 # Indice del Token di padding
     norm_eps: float = 1e-6  # Modificato da 1e-8 per coerenza con l'originale
     intermediate_size: int = 256  # FFN_HID_DIM
-    rope_theta: float = 10000
-    max_position_embeddings: int = 2048
+    rope_theta: float = 10000 # Parametro di frequenza di ROPE
+    max_position_embeddings: int = 256 # Max Lenght in Input, per semplicità uguale alla dim degli embedding in ingresso
 
     # Argomenti specifici per MLA
-    q_compressed_dim: int = 128
-    q_nope_head_dim: int = 48
-    q_rope_head_dim: int = 16
-    kv_compressed_dim: int = 128
-    k_nope_head_dim: int = 48
-    k_rope_head_dim: int = 16
-    v_head_dim: int = 64  # dim / n_heads
+    q_compressed_dim: int = 512 # Dimensione compressa di q, in questo caso sarà la metà
+    q_nope_head_dim: int = 192 # Parte dell'embedding totale che fa parte di NOPE
+    q_rope_head_dim: int = 64 # Parte dell'embedding totale che fa parte di ROPE
+    kv_compressed_dim: int = 512 # dimensione compressa di k e v, in questo caso sarà la metà
+    k_nope_head_dim: int = 192 # Parte dell'embedding totale che fa parte di NOPE
+    k_rope_head_dim: int = 64 # Parte dell'embedding totale che fa parte di ROPE
+    v_head_dim: int = 128  # Dimensione della testa di V, solitamente dim / n_heads, ed anche in questo caso
 
+    #Controlli vari ed eventiali sulle dimensioni
     def __post_init__(self):
         if self.dim % self.n_heads != 0:
             raise ValueError(f"dim ({self.dim}) must be divisible by n_heads ({self.n_heads})")
@@ -46,9 +47,9 @@ class ModelArgs:
     def head_dim(self) -> int:
         return self.dim // self.n_heads
 
-
+# Check sulla dim del tensore, in particolare che siano indicate le teste
 def repeat_kv_heads(x: Tensor, n_rep: int) -> Tensor:
-    if x.dim() != 4:
+    if x.dim() != 4: # 4 non indica il numero di teste
         raise ValueError(f"Expected 4D tensor, got {x.dim()}D")
     if n_rep == 1:
         return x
@@ -62,25 +63,34 @@ class RotaryPositionalEmbedding(nn.Module):
             raise ValueError("head_dim must be even")
         self.head_dim = head_dim
         self.max_position_embeddings = args.max_position_embeddings
+        # Creo onde sinusoidali di varie velocità usate per la rotazione
         inv_freq = 1.0 / (args.rope_theta ** (torch.arange(0, head_dim, 2).float() / head_dim))
         positions = torch.arange(args.max_position_embeddings, dtype=torch.float32)
+        # Creazione della matrice theta, con posizione-theta
         theta = torch.outer(positions, inv_freq)
+        # Precomputazione e caching di seno e coseno così non verrà creato dopo
         self.register_buffer("cos_cached", theta.cos(), persistent=False)
         self.register_buffer("sin_cached", theta.sin(), persistent=False)
 
     def forward(self, x: torch.Tensor, position_ids: torch.Tensor) -> torch.Tensor:
+        # Recuperiamo cos e sin
         cos = self.cos_cached[position_ids, :]
         sin = self.sin_cached[position_ids, :]
+        # Lo adattiamo a Tensore per pytorch
         cos = cos.unsqueeze(1)
         sin = sin.unsqueeze(1)
         cos = cos.to(dtype=x.dtype, device=x.device)
         sin = sin.to(dtype=x.dtype, device=x.device)
+        # Separiamo l'input in posizione pari e dispari
         x_even = x[..., ::2]
         x_odd = x[..., 1::2]
+        # Applico la rotazione nel piano 2D
         rot_even = x_even * cos - x_odd * sin
         rot_odd = x_even * sin + x_odd * cos
-        x_rotated = torch.stack((rot_even, rot_odd), dim=-1)
-        x_rotated = x_rotated.flatten(-2)
+        # Torch stack li metto nello stesso vettore
+        x_rotated = torch.stack((rot_even, rot_odd), dim=-1) # [batch, n_heads, seq_len, head_dim/2, 2]
+        # Fondiamo gli ultimi 2 assi affinchè abbia la stessa dim di x in entrata
+        x_rotated = x_rotated.flatten(-2) # [batch, n_heads, seq_len, head_dim]
         return x_rotated
 
 
@@ -99,23 +109,32 @@ class MultiLatentAttention(nn.Module):
         super().__init__()
         self.args = args
         self.layer_idx = layer_idx
+        # Comprimiamo i vettori x in uno spazio latente ridotto e successivamente viene normalizzato
         self.w_dq = nn.Linear(args.dim, args.q_compressed_dim)
         self.q_norm = RMSNorm(args.q_compressed_dim, args.norm_eps)
+        # Pesi per la decompressione di nope e rope
         self.w_uq = nn.Linear(args.q_compressed_dim, args.n_heads * args.q_nope_head_dim)
         self.w_qr = nn.Linear(args.q_compressed_dim, args.n_heads * args.q_rope_head_dim)
+        # Applicazione del rope su q e k, solo per le parti interessate
         self.rope_q = RotaryPositionalEmbedding(args, args.q_rope_head_dim)
         self.rope_k = RotaryPositionalEmbedding(args, args.k_rope_head_dim)
+        # Pesi per la compressione kv
         self.w_dkv = nn.Linear(args.dim, args.kv_compressed_dim)
         self.kv_norm = RMSNorm(args.kv_compressed_dim, args.norm_eps)
+        # Pesi per la decompressione di k
         self.w_uk = nn.Linear(args.kv_compressed_dim, args.n_kv_heads * args.k_nope_head_dim)
         self.w_kr = nn.Linear(args.dim, 1 * args.k_rope_head_dim)
+        # Produce la decompressione di V, inoltre ricordiamo che non viene applicato il rope su questa parte
         self.w_uv = nn.Linear(args.kv_compressed_dim, args.n_kv_heads * args.v_head_dim)
+        # Pesi per il feed forward net
         self.w_o = nn.Linear(args.n_heads * args.v_head_dim, args.dim)
 
     def forward(self, x: Tensor, position_ids: Tensor, attention_mask: Optional[Tensor] = None) -> Tensor:
-        batch_size, q_seq_len, _ = x.shape
+        batch_size, q_seq_len, _ = x.shape # Prendo info sull'input x, l'ultima dim contiene i dati veri e propri
+        # Comprimo q e kv
         compressed_q = self.q_norm(self.w_dq(x))
         compressed_kv = self.kv_norm(self.w_dkv(x))
+        # Applicazione del Rope, solo sulla porzione indicata dal costruttore della classe
         k_rope = self.w_kr(x)
         k_rope = k_rope.view(batch_size, q_seq_len, 1, self.args.k_rope_head_dim).transpose(1, 2)
         k_rope = self.rope_k(k_rope, position_ids)
@@ -129,6 +148,7 @@ class MultiLatentAttention(nn.Module):
         k_nope = self.w_uk(compressed_kv)
         k_nope = k_nope.view(batch_size, k_seq_len, self.args.n_kv_heads, self.args.k_nope_head_dim).transpose(1, 2)
         k_rope = repeat_kv_heads(k_rope, self.args.n_kv_heads)
+
         k_states = torch.cat((k_nope, k_rope), dim=-1)
         k_states = repeat_kv_heads(k_states, self.args.gqa_factor)
         v_states = self.w_uv(compressed_kv)
@@ -140,7 +160,7 @@ class MultiLatentAttention(nn.Module):
         attn_output = attn_output.transpose(1, 2).reshape(batch_size, q_seq_len,
                                                           self.args.n_heads * self.args.v_head_dim)
         return self.w_o(attn_output)
-
+# Non viene applicato il positional Embedding perchè utilizziamo il ROPE
 class InputEmbeddings(nn.Module):
     def __init__(self, d_model: int, vocab_size: int) -> None:
         super().__init__()
