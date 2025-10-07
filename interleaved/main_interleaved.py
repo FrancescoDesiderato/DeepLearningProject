@@ -5,8 +5,9 @@ from utils.evaluation import run_test_evaluation
 from utils.train import train_model
 from model_interleaved import NanoSocratesTransformerInterleaved
 
-csv_file = "../processed_samples.csv"
+csv_file = "../150_dataset/processed_samples_150.csv"
 tokenizer_path = "../tokenizer.json"
+weight_path = "../models/nanosocrates_transformer_interleaved_444_150(1).pkl"
 
 MAX_LENGTH = 256
 BATCH_SIZE = 64
@@ -19,6 +20,8 @@ DROPOUT = 0.3
 NUM_EPOCHS = 100            # Number of Epochs for Training
 
 warm_restart = True        # Set to TRUE if you want to use warm restarts
+model_training = False
+test_flag = True            # Set to TRUE if you want to test
 
 _, train_dataset, val_dataset, test_dataset = dataLoaderFromCSV(csv_file, tokenizer_path, MAX_LENGTH, BATCH_SIZE)
 tokenizer = PreTrainedTokenizerFast(tokenizer_file=tokenizer_path)
@@ -40,13 +43,21 @@ model = NanoSocratesTransformerInterleaved(
 model.embedding.padding_idx = PAD_IDX
 model.to(device)
 
-train_model(model=model,
-                    train_loader=train_dataset,
-                    val_loader=val_dataset,
-                    tokenizer=tokenizer,
-                    num_epochs=NUM_EPOCHS,
-                    device=device,
-                    warm_restart=warm_restart)
+if model_training:
 
-run_test_evaluation(model, test_dataset, tokenizer, device, MAX_LENGTH)
+    train_model(model=model,
+                train_loader=train_dataset,
+                val_loader=val_dataset,
+                tokenizer=tokenizer,
+                num_epochs=NUM_EPOCHS,
+                device=device,
+                warm_restart=warm_restart,
+                pad_idx=PAD_IDX)
+
+if test_flag:
+
+    model.load_state_dict(torch.load(weight_path, weights_only=True, map_location=device))
+    model.to(device)
+
+    run_test_evaluation(model, test_dataset, tokenizer, device, MAX_LENGTH)
 

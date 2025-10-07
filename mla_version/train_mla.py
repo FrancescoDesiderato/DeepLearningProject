@@ -116,7 +116,7 @@ def run_validation(model, val_loader, tokenizer, device, pad_idx, num_examples=5
                         break
 
                     # Decode input
-                    src_tokens = src[:, i].tolist()
+                    src_tokens = src[i].tolist()
                     pad_id = tokenizer.convert_tokens_to_ids("<PAD>")
                     if pad_id is not None:
                         src_tokens = [t for t in src_tokens if t != pad_id]
