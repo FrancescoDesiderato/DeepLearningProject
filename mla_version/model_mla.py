@@ -131,7 +131,7 @@ class MultiLatentAttention(nn.Module):
 
     def forward(self, x: Tensor, position_ids: Tensor, attention_mask: Optional[Tensor] = None) -> Tensor:
         batch_size, q_seq_len, _ = x.shape # Prendo info sull'input x, l'ultima dim contiene i dati veri e propri
-        # Comprimo q e kv
+        # Comprimo q e kv + normalizzazione
         compressed_q = self.q_norm(self.w_dq(x))
         compressed_kv = self.kv_norm(self.w_dkv(x))
         # Applicazione del Rope, solo sulla porzione indicata dal costruttore della classe
@@ -139,26 +139,33 @@ class MultiLatentAttention(nn.Module):
         k_rope = k_rope.view(batch_size, q_seq_len, 1, self.args.k_rope_head_dim).transpose(1, 2)
         k_rope = self.rope_k(k_rope, position_ids)
         k_seq_len = compressed_kv.shape[-2]
+        # Decomprimo la parte di rope e nope
         q_nope = self.w_uq(compressed_q)
         q_rope = self.w_qr(compressed_q)
         q_nope = q_nope.view(batch_size, q_seq_len, self.args.n_heads, self.args.q_nope_head_dim).transpose(1, 2)
         q_rope = q_rope.view(batch_size, q_seq_len, self.args.n_heads, self.args.q_rope_head_dim).transpose(1, 2)
+        # Applico il rope su q
         q_rope = self.rope_q(q_rope, position_ids)
+        # Riunisco sotto un unito vettore
         query_states = torch.cat((q_nope, q_rope), dim=-1)
         k_nope = self.w_uk(compressed_kv)
         k_nope = k_nope.view(batch_size, k_seq_len, self.args.n_kv_heads, self.args.k_nope_head_dim).transpose(1, 2)
+        # Replico per le varie teste
         k_rope = repeat_kv_heads(k_rope, self.args.n_kv_heads)
-
         k_states = torch.cat((k_nope, k_rope), dim=-1)
+        # Replico per le varie teste
         k_states = repeat_kv_heads(k_states, self.args.gqa_factor)
+        # Decomprimo v
         v_states = self.w_uv(compressed_kv)
         v_states = v_states.view(batch_size, k_seq_len, self.args.n_kv_heads, self.args.v_head_dim).transpose(1, 2)
         v_states = repeat_kv_heads(v_states, self.args.gqa_factor)
+        # Applico il meccanismo di attenzione
         attn_output = torch.nn.functional.scaled_dot_product_attention(
             query=query_states, key=k_states, value=v_states, attn_mask=attention_mask
         )
         attn_output = attn_output.transpose(1, 2).reshape(batch_size, q_seq_len,
                                                           self.args.n_heads * self.args.v_head_dim)
+        # Ritorno l'output
         return self.w_o(attn_output)
 # Non viene applicato il positional Embedding perchè utilizziamo il ROPE
 class InputEmbeddings(nn.Module):
@@ -219,7 +226,7 @@ class MultiHeadAttentionBlock(nn.Module):
         x = x.transpose(1, 2).contiguous().view(x.shape[0], -1, self.h * self.d_k)
         return self.w_o(x)
 
-
+# Blocco di Encoder che implementa la MLA
 class EncoderBlockMLA(nn.Module):
     def __init__(self, args: ModelArgs, layer_idx: int, dropout: float):
         super().__init__()
@@ -253,7 +260,7 @@ class Encoder(nn.Module):
             x = layer(x, position_ids, mask)
         return self.norm(x)
 
-
+# Blocco di Decoder che implementa la MLA
 class DecoderBlockMLA(nn.Module):
     def __init__(self, args: ModelArgs, layer_idx: int, cross_attention_block: MultiHeadAttentionBlock,
                  dropout: float) -> None:
