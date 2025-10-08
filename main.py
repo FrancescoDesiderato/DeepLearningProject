@@ -4,16 +4,9 @@ from transformers import PreTrainedTokenizerFast
 from dataset_construction import DatasetConstruction
 from dataset_utils.dataset import dataLoaderFromCSV
 from model import NanoSocratesTransformer
-"""
-Function to call to build the Transformer
-from model_from_scratch import build_transformer"""
 from utils.train import *
-import random
-import os
 from utils.mlm import MLM, train_mlm
-import numpy as np
 from utils.evaluation import run_test_evaluation
-
 
 page_size = 5000            # Max number of pages
 test_enable = True          # Toy Dataset Flag
@@ -25,13 +18,13 @@ BATCH_SIZE = 64              # Batch Size for Training
 NUM_EPOCHS = 150            # Number of Epochs for Training
 dataset_size = 1500        # Set to a number to limit the dataset size (for testing purposes)
 
-csv_file = "150_dataset/processed_samples_150.csv"
-tokenizer_path = "500_dataset/tokenizer_500.json"
+csv_file = "processed_samples.csv"
+tokenizer_path = "tokenizer.json"
 
-dataset_created = True     # Set to TRUE if you have the csv data
+dataset_created = False     # Set to TRUE if you have the csv data
 enable_mlm = False          # Set to TRUE if you want to use MLM during training
 mlm_trained = False         # Set to TRUE if you want to load a pre-trained MLM model
-full_balancing = True       # Set to TRUE if you want truly balanced dataset (only 1 sample for masking and continuerdf)
+full_balancing = False       # Set to TRUE if you want truly balanced dataset (only 1 sample for masking and continuerdf)
 warm_restart = True        # Set to TRUE if you want to use warm restarts
 overfit_test = False      # Set to TRUE if you want to overfit on a small dataset
 test_flag = True            # Set to TRUE if you want to test
@@ -43,45 +36,32 @@ NUM_ENCODER_LAYERS = 4      # Numero di layer nell'encoder
 NUM_DECODER_LAYERS = 4      # Numero di layer nel decoder
 FFN_HID_DIM = 256           # Dimensione del layer nascosto nella Feed-Forward Network
 DROPOUT = 0.3
-weight_path = "models/nanosocrates_transformer(12).pkl"
-
-def set_global_seed(seed: int) -> None:
-    os.environ["PYTHONHASHSEED"] = str(seed)
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
-
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
-    torch.use_deterministic_algorithms(True, warn_only=True)
+weight_path = "nanosocrates_transformer.pkl"
 
 if __name__ == '__main__':
+
     if dataset_created:
-        tokenizer, train_dataset, val_dataset, test_dataset = dataLoaderFromCSV(csv_file, tokenizer_path, MAX_LENGTH, BATCH_SIZE)
-        PAD_IDX = tokenizer.token_to_id("<PAD>")
+        _, train_dataset, val_dataset, test_dataset = dataLoaderFromCSV(csv_file, tokenizer_path, MAX_LENGTH, BATCH_SIZE)
     else:
         dataset = DatasetConstruction(page_size, test_enable, underscoreRemoval,
                                       VOCAB_SIZE, MAX_LENGTH, BATCH_SIZE, full_balancing, dataset_size, n_film)
-        tokenizer, train_dataset, val_dataset, test_dataset = dataset.pipeline()
-        PAD_IDX = tokenizer.token_to_id("<PAD>")
+        _, train_dataset, val_dataset, test_dataset = dataset.pipeline()
+
+
+    tokenizer = PreTrainedTokenizerFast(tokenizer_file=tokenizer_path)
+    PAD_IDX = tokenizer.convert_tokens_to_ids("<PAD>")
 
     # Debug tokenizer
     sample_text = "<SOS> <SOT> <SUBJ> dbr :' If Only ' Jim <PRED> dbo : director <OBJ> dbr : Jacques Jaccard <EOT> <EOS>"
-    tokenizer = PreTrainedTokenizerFast(tokenizer_file=tokenizer_path)
-    # PAD_IDX = tokenizer.convert_tokens_to_ids("<PAD>")
     tokens = tokenizer.encode(sample_text)
     print(f"Original: {sample_text}")
     print(f"Tokens: {tokens}")
     print(f"Decoded: {tokenizer.decode(tokens, skip_special_tokens=False)}")
 
-    # Sposta il modello sulla GPU se disponibile
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
     print(device)
 
     if model_training:
-        SEED = 42
-        # set_global_seed(SEED)
 
         model = NanoSocratesTransformer(
             vocab_size=tokenizer.vocab_size,
@@ -101,6 +81,7 @@ if __name__ == '__main__':
                 exit(1)
 
         if enable_mlm:
+
             model = MLM(
                 transformer=model,
                 mask_prob=0.15,
@@ -137,13 +118,13 @@ if __name__ == '__main__':
             model = model.transformer
 
         if mlm_trained:
+            # TODO allineare con il notebook
             mlm_state_dict = torch.load("mlm_model_166.pt", map_location=device)
 
-            # Estrai solo i pesi del transformer interno
+            # Estrae solo i pesi del transformer interno
             transformer_state_dict = {}
             for key, value in mlm_state_dict.items():
                 if key.startswith('transformer.'):
-                    # Rimuovi il prefisso 'transformer.' per adattarlo al NanoSocratesTransformer
                     new_key = key[12:]  # Rimuove 'transformer.'
                     transformer_state_dict[new_key] = value
 
@@ -162,7 +143,6 @@ if __name__ == '__main__':
         # Salva il modello addestrato
         torch.save(model.state_dict(), "nanosocrates_transformer.pkl")
 
-        # Test subito dopo il training se richiesto
         if test_flag:
             print("\n" + "="*80)
             print("STARTING TEST EVALUATION AFTER TRAINING")
@@ -170,7 +150,8 @@ if __name__ == '__main__':
             run_test_evaluation(model, test_dataset, tokenizer, device, MAX_LENGTH)
 
     else:
-        # Carica modello pre-addestrato
+
+        # modello pre-addestrato
         model = NanoSocratesTransformer(
             vocab_size=tokenizer.vocab_size,
             d_model=D_MODEL,
@@ -179,12 +160,11 @@ if __name__ == '__main__':
             num_decoder_layers=NUM_DECODER_LAYERS,
             ffn_hid_dim=FFN_HID_DIM
         )
-        # Informa il layer di embedding quale ID è per il padding
+
         model.embedding.padding_idx = PAD_IDX
         model.load_state_dict(torch.load(weight_path, weights_only=True, map_location=device))
         model.to(device)
 
-        # Test con modello pre-caricato se richiesto
         if test_flag:
             print("\n" + "="*80)
             print("STARTING TEST EVALUATION WITH PRE-TRAINED MODEL")
