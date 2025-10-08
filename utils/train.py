@@ -31,7 +31,8 @@ def greedy_decode(model, src, tokenizer, max_len=128, device='cuda',ktop=False,k
                 top_k_probs, top_k_indices = torch.topk(probs, k=kwords, dim=-1) # [batch_size,5]
 
                 # Scegli casualmente uno dei 5 token per ogni elemento del batch
-                next_token = torch.multinomial(top_k_probs, num_samples=1) # [batch_size,1]
+                next_token_index = torch.multinomial(top_k_probs, num_samples=1) # [batch_size,1]
+                next_token = torch.gather(top_k_indices, dim=1, index=next_token_index)
             else:
                 next_token = output[-1, :, :].argmax(dim=-1, keepdim=True)  # [batch_size, 1]
 

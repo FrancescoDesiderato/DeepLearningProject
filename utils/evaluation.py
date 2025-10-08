@@ -108,7 +108,7 @@ def _mask_accuracy_all(preds: List[str], refs: List[str],inps:List[str]) -> floa
     correct = 0
     total = 0
 
-    corpus_path = "../dataset_utils/outputs/corpus.txt"
+    corpus_path = "./dataset_utils/outputs/corpus.txt"
 
     with open(corpus_path, "r") as corpus_file:
         txt = corpus_file.read()
