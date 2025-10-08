@@ -1,8 +1,8 @@
 import torch
 from torch.optim.lr_scheduler import CosineAnnealingLR
+import random
 
-
-def greedy_decode(model, src, tokenizer, max_len=128, device='cuda'):
+def greedy_decode(model, src, tokenizer, max_len=128, device='cuda',ktop=False,kwords = 5):
     """
     Perform greedy decoding for a single source sequence.
     """
@@ -24,7 +24,17 @@ def greedy_decode(model, src, tokenizer, max_len=128, device='cuda'):
             output = model(src, tgt)  # [tgt_len, batch_size, vocab_size]
 
             # Get next token (greedy)
-            next_token = output[-1, :, :].argmax(dim=-1, keepdim=True)  # [batch_size, 1]
+            if ktop:
+                logits = output[-1, :, :]
+                probs = torch.softmax(logits, dim=-1)
+                # Prendo le prime 5 prob con i rispettivi indici
+                top_k_probs, top_k_indices = torch.topk(probs, k=kwords, dim=-1) # [batch_size,5]
+
+                # Scegli casualmente uno dei 5 token per ogni elemento del batch
+                next_token = torch.multinomial(top_k_probs, num_samples=1) # [batch_size,1]
+            else:
+                next_token = output[-1, :, :].argmax(dim=-1, keepdim=True)  # [batch_size, 1]
+
             next_token = next_token.transpose(0, 1)  # [1, batch_size]
 
             # Append to target sequence

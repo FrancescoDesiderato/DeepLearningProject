@@ -5,6 +5,7 @@ import torch
 from tqdm import tqdm
 import evaluate
 import time
+from utils.train import greedy_decode
 
 def _safe_tokens(text: str) -> List[str]:
     """
@@ -312,7 +313,7 @@ def evaluate_tasks(
 
     return results
 
-def run_test_evaluation(model, test_dataset, tokenizer, device, MAX_LENGTH):
+def run_test_evaluation(model, test_dataset, tokenizer, device, MAX_LENGTH,ktop=False,kwords = 5):
     """
     Esegue la valutazione del modello sul test set usando greedy decoding.
     """
@@ -341,9 +342,8 @@ def run_test_evaluation(model, test_dataset, tokenizer, device, MAX_LENGTH):
             # Model expects [seq_len, batch]; transpose
             src_t = src.transpose(0, 1)                 # [S_in, B]
 
-            # Greedy decode
-            from utils.train import greedy_decode
-            predictions = greedy_decode(model, src_t, tokenizer, max_len=MAX_LENGTH//2, device=device)
+            # In fase di test mettiamo topk words
+            predictions = greedy_decode(model, src_t, tokenizer, max_len=MAX_LENGTH//2, device=device,ktop=ktop,kwords=kwords)
             print("prediction calculated")
             # Prepare references (remove SOS token from beginning, EOS/PAD from end)
             references = []

@@ -21,10 +21,10 @@ dataset_size = 1500        # Set to a number to limit the dataset size (for test
 csv_file = "processed_samples.csv"
 tokenizer_path = "tokenizer.json"
 
-dataset_created = False     # Set to TRUE if you have the csv data
+dataset_created = True     # Set to TRUE if you have the csv data
 enable_mlm = False          # Set to TRUE if you want to use MLM during training
 mlm_trained = False         # Set to TRUE if you want to load a pre-trained MLM model
-full_balancing = False       # Set to TRUE if you want truly balanced dataset (only 1 sample for masking and continuerdf)
+full_balancing = True       # Set to TRUE if you want truly balanced dataset (only 1 sample for masking and continuerdf)
 warm_restart = True        # Set to TRUE if you want to use warm restarts
 overfit_test = False      # Set to TRUE if you want to overfit on a small dataset
 test_flag = True            # Set to TRUE if you want to test
@@ -36,7 +36,7 @@ NUM_ENCODER_LAYERS = 4      # Numero di layer nell'encoder
 NUM_DECODER_LAYERS = 4      # Numero di layer nel decoder
 FFN_HID_DIM = 256           # Dimensione del layer nascosto nella Feed-Forward Network
 DROPOUT = 0.3
-weight_path = "nanosocrates_transformer.pkl"
+weight_path = "nanosocrates_transformer_150_wd.pkl"
 
 if __name__ == '__main__':
 
@@ -169,4 +169,4 @@ if __name__ == '__main__':
             print("\n" + "="*80)
             print("STARTING TEST EVALUATION WITH PRE-TRAINED MODEL")
             print("="*80)
-            run_test_evaluation(model, test_dataset, tokenizer, device, MAX_LENGTH)
+            run_test_evaluation(model, test_dataset, tokenizer, device, MAX_LENGTH,ktop=True,kwords=3)
