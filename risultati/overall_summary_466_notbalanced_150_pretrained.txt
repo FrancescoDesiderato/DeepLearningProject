@@ -1,0 +1,25 @@
+Risultati 466 pretrained not balanced 150
+OVERALL EVALUATION SUMMARY
+==================================================
+
+Text2RDF:
+  precision: 0.591837
+  recall: 0.362500
+  f1: 0.449612
+
+MASK:
+  accuracy: 0.416667
+  accuracy_wrt_all: 0.583333
+
+RDF2Text:
+  bleu: 0.170204
+  meteor: 0.410388
+  rouge1: 0.496671
+  rouge2: 0.345982
+  rougeL: 0.427883
+  rougeLsum: 0.427243
+
+CONTINUERDF:
+  precision: 0.277778
+  recall: 0.238095
+  f1: 0.256410
