@@ -22,7 +22,7 @@ class DatasetFormatting:
 
     def compute(self, seed=42):
         with open(self.dataset_filename, "r", encoding="utf-8") as f:
-            original_dataset = json.load(f)
+            json_dataset = json.load(f)
 
         tokenizer = Tokenizer.from_file(self.tokenizer_path)
         processed_samples = []
@@ -30,28 +30,28 @@ class DatasetFormatting:
         print("Inizio la formattazione degli esempi per i 4 task...")
 
         if self.dataset_size:
-            original_dataset = original_dataset[:self.dataset_size]
+            json_dataset = json_dataset[:self.dataset_size]
 
-        for item in original_dataset:
+        for item in json_dataset:
             text = item["text"]
             triples = item["triples"]
 
             if not text or not triples:
                 continue
 
-            # Text2RDF - Add SOS/EOS tokens to target
+            # Text2RDF
             input_text1 = f"<Text2RDF> {text}"
             target_text1 = f"<SOS> {' '.join([serialize_triple(t) for t in triples])} <EOS>"
             if target_text1:
                 processed_samples.append({"task":"Text2RDF","input": input_text1, "target": target_text1})
 
-            # RDF2Text - Add SOS/EOS tokens to target
+            # RDF2Text
             input_text2 = f"<RDF2Text> {' '.join([serialize_triple(t) for t in triples])}"
             target_text2 = f"<SOS> {text} <EOS>"
             if input_text2:
                 processed_samples.append({"task":"RDF2Text","input": input_text2, "target": target_text2})
 
-            # RDF Completion 1 (Masking) - Add SOS/EOS tokens to target
+            # RDF Completion 1 (Masking)
             if not self.full_balancing:
                 for triple in triples:
                     components = ["subject", "predicate", "object"]
@@ -78,21 +78,16 @@ class DatasetFormatting:
                         processed_samples.append(
                             {"task":"MASK","input": input_text3_double, "target": target_text3_double})
 
-                    # RDF Completion 2 (Continuation) - Add SOS/EOS tokens to target
+                    # RDF Completion 2 (Continuation)
                     if len(triples) >= 2:
                         indices = list(range(len(triples)))
                         # scegli 1..len(triples)-1 triple di contesto
                         ctx_count = random.randint(1, len(triples) - 1)
                         ctx_indices = sorted(random.sample(indices, ctx_count))
-                        remaining = [i for i in indices if i not in ctx_indices]
-
-                        # scegli 1..K triple target (limita K per controllare la lunghezza)
-                        max_target = min(len(remaining), 3)  # limite pratico
-                        tgt_count = random.randint(1, max_target)
-                        tgt_indices = sorted(random.sample(remaining, tgt_count))
-
+                        # Le triple di contesto
                         context_triples = [serialize_triple(triples[i]) for i in ctx_indices]
-                        target_triples = [serialize_triple(triples[i]) for i in tgt_indices]
+                        # Le triple che NON sono di contesto
+                        target_triples = [serialize_triple(triples[i]) for i in indices if i not in ctx_indices]
 
                         input_text4 = f"<CONTINUERDF> {' '.join(context_triples)}"
                         target_text4 = f"<SOS> {' '.join(target_triples)} <EOS>"
@@ -129,18 +124,13 @@ class DatasetFormatting:
 
                 if len(triples) >= 2:
                     indices = list(range(len(triples)))
-                    # scegli 1..len(triples)-1 triple di contesto
+                    # sceglie 1..len(triples)-1 triple di contesto
                     ctx_count = random.randint(1, len(triples) - 1)
                     ctx_indices = sorted(random.sample(indices, ctx_count))
-                    remaining = [i for i in indices if i not in ctx_indices]
-
-                    # scegli 1..K triple target (limita K per controllare la lunghezza)
-                    max_target = min(len(remaining), 3)  # limite pratico
-                    tgt_count = random.randint(1, max_target)
-                    tgt_indices = sorted(random.sample(remaining, tgt_count))
-
+                    # Le triple di contesto
                     context_triples = [serialize_triple(triples[i]) for i in ctx_indices]
-                    target_triples = [serialize_triple(triples[i]) for i in tgt_indices]
+                    # Le triple che NON sono di contesto
+                    target_triples = [serialize_triple(triples[i]) for i in indices if i not in ctx_indices]
 
                     input_text4 = f"<CONTINUERDF> {' '.join(context_triples)}"
                     target_text4 = f"<SOS> {' '.join(target_triples)} <EOS>"

@@ -33,11 +33,6 @@ class BPECustom:
         else:
             tokenizer.pre_tokenizer = Whitespace()
 
-
-        # definizione dei token speciali che vogliamo includere nel vocabolario
-        # includiamo anche i token standard come PAD (per il padding) e UNK (sconosciuto)
-
-
         # crea un trainer per il tokenizzatore BPE
         trainer = BpeTrainer(vocab_size=self.VOCAB_SIZE, special_tokens=SPECIAL_TOKENS)
 

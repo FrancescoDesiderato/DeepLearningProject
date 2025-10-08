@@ -11,7 +11,7 @@ class NanoSocratesDataset(Dataset):
         self.samples = samples
         self.tokenizer = tokenizer
         self.max_length = max_length
-        self.tokenizer.enable_truncation(max_length=self.max_length)
+        self.tokenizer.no_truncation() # disabilita il troncamento automatico per gestirlo dopo manualmente
         self.tokenizer.no_padding()
 
     def __len__(self):
@@ -74,6 +74,7 @@ class DataCollator:
         }
 
 def dataLoaderFromCSV(csv_file, tokenizer_path, MAX_LENGTH, BATCH_SIZE, SEED: int = 42):
+    # da utilizzare quando tutti gli elementi necessari alla creazione del dataset sono già disponibili
     data = pd.read_csv(csv_file)
     tokenizer = Tokenizer.from_file(tokenizer_path)
     train_dataloader, evaluation_dataloader, test_dataloader = dataset_split(data, tokenizer, MAX_LENGTH, BATCH_SIZE, SEED)
