@@ -62,8 +62,7 @@ class DataCollator:
             labels_list, batch_first=True, padding_value=self.pad_token_id
         )
 
-        # Creiamo la maschera di attenzione manualmente
-        # 1 dove ci sono token reali, 0 dove c'è padding
+        # maschera di attenzione per il padding
         attention_mask = (input_ids_padded != self.pad_token_id).long()
 
         return {

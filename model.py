@@ -15,14 +15,13 @@ class NanoSocratesTransformer(nn.Module):
         super().__init__()
         self.d_model = d_model
 
-        # 1. Embedding Layer (condiviso tra encoder e decoder)
+        # Embedding Layer (condiviso tra encoder e decoder)
         self.embedding = nn.Embedding(vocab_size, d_model)
 
-        # 2. Positional Encoding
+        # Positional Encoding
         self.pos_encoder = PositionalEncoding(d_model)
 
-        # 3. Il cuore del modello: il Transformer di PyTorch
-        # Questo modulo si occupa di creare gli stack di EncoderLayer e DecoderLayer
+        # Transformer di PyTorch
         self.transformer = nn.Transformer(
             d_model=d_model,
             nhead=n_heads,
@@ -33,12 +32,13 @@ class NanoSocratesTransformer(nn.Module):
             batch_first=False  # PyTorch di default usa [seq_len, batch_size, dim]
         )
 
-        # 4. Output Layer
-        # Un layer lineare che proietta l'output del decoder sulla dimensione del vocabolario
+
+        # Layer lineare che proietta l'output del decoder sulla dimensione del vocabolario
         self.output = nn.Linear(d_model, vocab_size)
 
     def _generate_square_subsequent_mask(self, sz):
-        # Genera una maschera per il decoder per prevenire che "veda" il futuro
+        # maschera per il decoder per evitare di considerare i token futuri
+        # Crea una matrice triangolare superiore con -inf sopra la diagonale principale
         # Es: per una sequenza di lunghezza 3, la maschera è:
         # [[0, -inf, -inf],
         #  [0,   0,  -inf],
@@ -55,16 +55,14 @@ class NanoSocratesTransformer(nn.Module):
         tgt_seq_len = tgt.shape[0]
         tgt_mask = self._generate_square_subsequent_mask(tgt_seq_len).to(src.device)
 
-        # Maschere per il padding (per ignorare i token <PAD>)
+        # ignora i token padding
         src_padding_mask = (src == self.embedding.padding_idx).transpose(0, 1)
         tgt_padding_mask = (tgt == self.embedding.padding_idx).transpose(0, 1)
 
-        # 1. Applica l'embedding e il positional encoding
-        # Moltiplichiamo per sqrt(d_model) come da paper originale
+        # Applica l'embedding e il positional encoding
         src_emb = self.pos_encoder(self.embedding(src) * math.sqrt(self.d_model))
         tgt_emb = self.pos_encoder(self.embedding(tgt) * math.sqrt(self.d_model))
 
-        # 2. Passa tutto al modulo Transformer
         output = self.transformer(
             src_emb,
             tgt_emb,
@@ -73,14 +71,12 @@ class NanoSocratesTransformer(nn.Module):
             tgt_key_padding_mask=tgt_padding_mask
         )
 
-        # 3. Applica il layer di output finale
+        # layer di output
         return self.output(output)
 
     def encoder_only_forward(self, input_ids, attention_mask=None):
         """
         Esegue solo l'encoder per l'MLM.
-        input_ids: LongTensor [B, T]
-        attention_mask: LongTensor [B, T] (1=token valido, 0=pad) opzionale
         Ritorna logits [B, T, vocab_size]
         """
         # [B, T] -> [T, B]

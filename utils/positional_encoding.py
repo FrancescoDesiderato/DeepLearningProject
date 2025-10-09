@@ -6,7 +6,8 @@ class PositionalEncoding(nn.Module):
     def __init__(self, d_model, max_len=512):
         super().__init__()
 
-        position = torch.arange(max_len).unsqueeze(1)
+        position = torch.arange(max_len).unsqueeze(1) # tensore colonna [max_len, 1] che rappresenta le posizioni della sequenza
+        # termine divisione della codifica posizionale
         div_term = torch.exp(torch.arange(0, d_model, 2) * (-math.log(10000.0) / d_model))
 
         # Crea la matrice di positional encoding
