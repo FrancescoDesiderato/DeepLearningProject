@@ -19,7 +19,7 @@ NUM_EPOCHS = 150            # Number of Epochs for Training
 dataset_size = 1500        # Set to a number to limit the dataset size (for testing purposes)
 
 csv_file = "processed_samples.csv"
-tokenizer_path = "tokenizer.json"
+tokenizer_path = "500_dataset/tokenizer_500.json"
 
 dataset_created = True     # Set to TRUE if you have the csv data
 enable_mlm = False          # Set to TRUE if you want to use MLM during training
@@ -36,7 +36,7 @@ NUM_ENCODER_LAYERS = 4      # Numero di layer nell'encoder
 NUM_DECODER_LAYERS = 4      # Numero di layer nel decoder
 FFN_HID_DIM = 256           # Dimensione del layer nascosto nella Feed-Forward Network
 DROPOUT = 0.3
-weight_path = "nanosocrates_transformer_150_wd.pkl"
+weight_path = "models/nanosocrates_transformer_PRETRAINED_444_150.pkl"
 
 if __name__ == '__main__':
 
@@ -169,4 +169,4 @@ if __name__ == '__main__':
             print("\n" + "="*80)
             print("STARTING TEST EVALUATION WITH PRE-TRAINED MODEL")
             print("="*80)
-            run_test_evaluation(model, test_dataset, tokenizer, device, MAX_LENGTH,ktop=True,kwords=3)
+            run_test_evaluation(model, test_dataset, tokenizer, device, MAX_LENGTH, ktop=True, kwords=3)

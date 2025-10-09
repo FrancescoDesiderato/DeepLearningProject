@@ -1,6 +1,5 @@
 import torch
 from torch.optim.lr_scheduler import CosineAnnealingLR
-import random
 
 def greedy_decode(model, src, tokenizer, max_len=128, device='cuda',ktop=False,kwords = 5):
     """
@@ -145,7 +144,7 @@ def run_validation(model, val_loader, tokenizer, device, num_examples=5):
 
     return avg_val_loss
 
-def train_model(model, train_loader, val_loader, num_epochs, device, tokenizer, warm_restart):
+def train_model(model, train_loader, val_loader, num_epochs, device, tokenizer, warm_restart, pad_idx=0):
 
     actual_vocab_size = tokenizer.vocab_size
     criterion = torch.nn.CrossEntropyLoss(ignore_index=model.embedding.padding_idx)
