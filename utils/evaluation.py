@@ -95,10 +95,10 @@ def _mask_accuracy(preds: List[str], refs: List[str]) -> float:
     for pred_str, ref_str in zip(preds, refs):
         pred_triples = _extract_triples(pred_str)
         ref_triples = _extract_triples(ref_str)
-        if len(pred_triples) == 0 or len(ref_triples) == 0:
+        # per questo task ci si aspetta esattamente una tripla predetta e una di riferimento
+        if len(pred_triples) != 1 or len(ref_triples) != 1:
             total += 1
             continue
-        # ci si aspetta una singola tripla per input in questo task (se sono più, considera solo la prima)
         if pred_triples[0] == ref_triples[0]:
             correct += 1
         total += 1

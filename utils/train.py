@@ -138,7 +138,7 @@ def run_validation(model, val_loader, tokenizer, device, num_examples=5):
 
     return avg_val_loss
 
-def train_model(model, train_loader, val_loader, num_epochs, device, tokenizer, warm_restart):
+def train_model(model, train_loader, val_loader, num_epochs, device, tokenizer, scheduler_flag):
 
     # cross entropy loss con ignore index per il padding
     criterion = torch.nn.CrossEntropyLoss(ignore_index=model.embedding.padding_idx)
@@ -176,7 +176,7 @@ def train_model(model, train_loader, val_loader, num_epochs, device, tokenizer, 
             avg_val_loss = run_validation(model, val_loader, tokenizer, device)
             torch.save(model.state_dict(), "nanosocrates_transformer.pkl")
 
-        if warm_restart:
+        if scheduler_flag:
             scheduler.step()
         model.train()
 
