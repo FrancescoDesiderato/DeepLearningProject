@@ -4,12 +4,11 @@ import re
 import torch
 from tqdm import tqdm
 import evaluate
-import time
 from utils.train import greedy_decode
 
-def _safe_tokens(text: str) -> List[str]:
+def _normalize_tokens(text: str) -> List[str]:
     """
-    Tokenizza in modo sicuro:
+    Tokenizza la stringa `text` in una lista di token:
     - Restituisce [] se `text` è None.
     - Converte in str, fa strip e split su spazi bianchi (collassando spazi multipli).
     """
@@ -20,17 +19,18 @@ def _safe_tokens(text: str) -> List[str]:
 
 def _extract_triples(seq: str) -> List[Tuple[str, str, str]]:
     """
-    Parse triples from RDF format: "dbr:subject dbo:predicate dbr:object"
+    Parsing delle triple nel formato: "dbr:subject dbo:predicate dbr:object"
     """
     if seq is None or not seq.strip():
         return []
-
+    # elimina token SOS/EOS
     seq = re.sub(r'<SOS>|<EOS>', '', seq).strip()
 
-    tokens = _safe_tokens(seq)
+    tokens = _normalize_tokens(seq)
     triples = []
     i = 0
     while i < len(tokens):
+        # ricerca start e end of triple
         if tokens[i] == "<SOT>":
             subj, pred, obj = [], [], []
             i += 1
@@ -43,6 +43,7 @@ def _extract_triples(seq: str) -> List[Tuple[str, str, str]]:
                 elif tokens[i] == "<OBJ>":
                     mode = "obj"
                 else:
+                    # dopo l'idendificatore, retrieve del token successivo
                     if mode == "subj":
                         subj.append(tokens[i])
                     elif mode == "pred":
@@ -52,6 +53,7 @@ def _extract_triples(seq: str) -> List[Tuple[str, str, str]]:
                 i += 1
             if i < len(tokens) and tokens[i] == "<EOT>":
                 i += 1
+            # costruisce tupla (soggetto, predicato, oggetto)
             triples.append((" ".join(subj).strip(), " ".join(pred).strip(), " ".join(obj).strip()))
         else:
             i += 1
@@ -85,8 +87,8 @@ def _triples_prf(preds: List[str], refs: List[str]) -> Tuple[float, float, float
 
 def _mask_accuracy(preds: List[str], refs: List[str]) -> float:
     """
-    Accuracy for RDF Completion 1 (MASK): a prediction is correct if the
-    fully reconstructed triple matches the ground-truth fully reconstructed triple.
+    Accuracy per RDF Completion 1 (MASK): la predizione è corretta se la tripla
+    estratta dalla predizione corrisponde esattamente a quella del riferimento.
     """
     correct = 0
     total = 0
@@ -96,15 +98,14 @@ def _mask_accuracy(preds: List[str], refs: List[str]) -> float:
         if len(pred_triples) == 0 or len(ref_triples) == 0:
             total += 1
             continue
-        # for this dataset, masking examples produce a single triple target
+        # ci si aspetta una singola tripla per input in questo task (se sono più, considera solo la prima)
         if pred_triples[0] == ref_triples[0]:
             correct += 1
         total += 1
     return correct / total if total > 0 else 0.0
 
-def _mask_accuracy_all(preds: List[str], refs: List[str],inps:List[str]) -> float:
-    """The accuracy metric is calculated wrt all possible matches in the corpus.
-    Furthermore this metric is not token based but triples based"""
+def _mask_accuracy_all(preds: List[str], refs: List[str], inps:List[str]) -> float:
+    """Valuta se la tripla predetta esiste nel corpus originale."""
     correct = 0
     total = 0
 
@@ -113,14 +114,15 @@ def _mask_accuracy_all(preds: List[str], refs: List[str],inps:List[str]) -> floa
     with open(corpus_path, "r") as corpus_file:
         txt = corpus_file.read()
 
+    # Estrae tutte le triple dal corpus
     pattern = r'<SOT>\s*<SUBJ>\s*([^<]+)\s*<PRED>\s*([^<]+)\s*<OBJ>\s*([^<]+)\s*<EOT>'
     matches = re.findall(pattern, txt)
 
     matches_triples = [{"subj": m[0].strip(), "pred": m[1].strip(), "obj": m[2].strip()} for m in matches]
     matches_triples = [{k: v.replace("_", " ") for k, v in triple.items()} for triple in matches_triples]
 
-    for i,p in zip(inps, preds):
-        total += 1 #Count dei sample presenti
+    for i, p in zip(inps, preds):
+        total += 1 # conta i sample presenti
         pattern = re.compile(
             r'<SOT>\s*'
             r'<SUBJ>\s*(?P<subj>[^<]+)\s*'
@@ -139,45 +141,45 @@ def _mask_accuracy_all(preds: List[str], refs: List[str],inps:List[str]) -> floa
 
         m = pattern.search(p)
         if m:
+            # tripla predetta
             triple_p = {k: v.strip() for k, v in m.groupdict().items()}  # {'subj': 'dbr:$1,000_a_Touchdown', 'pred': 'dbo:starring', 'obj': 'dbr:Joe_E._Brown'}
-            #print(f"tripla predetta: {triple_p}")
         m = pattern_mask.search(i)
         if m:
+            # tripla input con <MASK>
             triple_i = {k: v.strip() for k, v in m.groupdict().items()} # {'subj': '<MASK>', 'pred': 'dbo:starring', 'obj': 'dbr:Joe_E._Brown'}
-            #print(f"Tripla in input {triple_i}")
+
+        # verifica che la predizione non abbia cambiato gli elementi non mascherati
         continueFlag = True
-        for el_p,el_i in zip(triple_p, triple_i):
+        for el_p, el_i in zip(triple_p, triple_i):
             if el_i == "<MASK>":
                 continue
             elif el_i == el_p:
                 continue
             else:
                 continueFlag = False
-                #print("Error in triple_i")
-        #Controllo
-        if continueFlag: #TODO: Controllo con i match nel corpus
+
+        # Controlla se esiste la tripla predetta nel corpus
+        if continueFlag:
             for triple_m in matches_triples:
                 t_m = {k:t.replace(" ","") for k,t in triple_m.items()}
                 t_p = {k:t.replace(" ","") for k,t in triple_p.items()}
 
                 if all(k in t_m and t_m[k] == v for k, v in t_p.items()):
-                    #print(f"Match: {t_m}")
-                    #print(f"Match prediction: {t_p}")
                     correct += 1
                     continue
 
     return correct / total if total > 0 else 0.0
 
 
-
-
 def _text_metrics(preds: List[str], refs: List[str]) -> Dict[str, float]:
-    # Clean predictions and references from special tokens for text metrics
+    """
+    Calcola BLEU, ROUGE, METEOR tra predizioni e riferimenti testuali per RDF2Text.
+    """
     clean_preds = []
     clean_refs = []
 
     for pred, ref in zip(preds, refs):
-        # Remove all special tokens for text evaluation
+        # rimuove token speciali
         clean_pred = re.sub(r'<[^>]+>', ' ', pred).strip()
         clean_ref = re.sub(r'<[^>]+>', ' ', ref).strip()
         clean_preds.append(clean_pred)
@@ -188,7 +190,6 @@ def _text_metrics(preds: List[str], refs: List[str]) -> Dict[str, float]:
         rouge = evaluate.load("rouge")
         meteor = evaluate.load("meteor")
 
-        # evaluate expects list[str] and list[list[str]] for references
         bleu_res = bleu.compute(predictions=clean_preds, references=[[r] for r in clean_refs])
         rouge_res = rouge.compute(predictions=clean_preds, references=clean_refs)
         meteor_res = meteor.compute(predictions=clean_preds, references=clean_refs)
@@ -197,7 +198,7 @@ def _text_metrics(preds: List[str], refs: List[str]) -> Dict[str, float]:
             "bleu": float(bleu_res.get("bleu", 0.0)),
             "meteor": float(meteor_res.get("meteor", 0.0)),
         }
-        # pick common ROUGE variants if present
+        # aggiungi varianti ROUGE se presenti
         for k in ["rouge1", "rouge2", "rougeL", "rougeLsum"]:
             if k in rouge_res:
                 out[k] = float(rouge_res[k])
@@ -207,13 +208,17 @@ def _text_metrics(preds: List[str], refs: List[str]) -> Dict[str, float]:
         return {"bleu": 0.0, "meteor": 0.0, "rouge1": 0.0, "rouge2": 0.0, "rougeL": 0.0}
 
 
-_TAG_PATTERN = re.compile(r"(<SOT>|<SUBJ>|<PRED>|<OBJ>|<EOT>|<MASK>|<MASKTASK>|<SOS>|<EOS>)")
-
-
 def normalize_triple_text(text: str) -> str:
+    """
+    Normalizza il testo delle triple in un formato standard:
+    - Aggiunge spazi attorno ai tag speciali.
+    - Collassa spazi multipli in uno singolo.
+    - Rimuove spazi iniziali e finali.
+    """
+    tag_pattern = re.compile(r"(<SOT>|<SUBJ>|<PRED>|<OBJ>|<EOT>|<MASK>|<MASKTASK>|<SOS>|<EOS>)")
     if text is None:
         return ""
-    text = _TAG_PATTERN.sub(r" \1 ", text)
+    text = tag_pattern.sub(r" \1 ", text)
     return " ".join(text.strip().split())
 
 
@@ -222,36 +227,30 @@ def evaluate_tasks(
     predictions: List[str],
     references: List[str],
     inputs: List[str],
-    output_dir: str = "altri_output",
+    output_dir: str,
 ) -> Dict[str, Dict[str, float]]:
-    """
-    Compute metrics per task and save/print results.
 
-    task_list: list of task identifiers matching dataset formatting: "RDF2Text", "Text2RDF", "MASK", "CONTINUERDF"
-    predictions: model decoded strings
-    references: ground-truth target strings
-    output_dir: directory where per-task txt reports will be saved
-    """
     assert len(task_list) == len(predictions) == len(references), "Mismatched lengths"
 
     os.makedirs(output_dir, exist_ok=True)
 
-    # normalize potential tag spacing issues
-    inputs = [normalize_triple_text(i) for i in predictions]
+    # normalizzazione (spazi attorno ai tag, rimozione spazi multipli)
+    inputs = [normalize_triple_text(i) for i in inputs]
     predictions = [normalize_triple_text(p) for p in predictions]
     references = [normalize_triple_text(r) for r in references]
 
-    # Group by task
-    buckets: Dict[str, Dict[str, List[str]]] = {}
-    for t, p, r,i in zip(task_list, predictions, references,inputs):
+    # dizionario per raggruppare gli esempi in base al task
+    buckets: Dict[str, Dict[str, List[str]]] = {} # task -> {"preds": [], "refs": [], "inputs":[]}
+    for t, p, r, i in zip(task_list, predictions, references, inputs):
         if t not in buckets:
             buckets[t] = {"preds": [], "refs": [],"inputs":[]}
         buckets[t]["preds"].append(p)
         buckets[t]["refs"].append(r)
         buckets[t]["inputs"].append(i)
+    # dizionario per i risultati
+    results: Dict[str, Dict[str, float]] = {} # task -> {metric_name: value}
 
-    results: Dict[str, Dict[str, float]] = {}
-
+    # valutazione per ogni task
     for task, data in buckets.items():
         preds = data["preds"]
         refs = data["refs"]
@@ -272,13 +271,13 @@ def evaluate_tasks(
             p, r, f = _triples_prf(preds, refs)
             metrics = {"precision": p, "recall": r, "f1": f}
         else:
-            # Fallback: try triple PRF as it's the safest for RDF-like outputs
+            # Fallback
             p, r, f = _triples_prf(preds, refs)
             metrics = {"precision": p, "recall": r, "f1": f}
 
         results[task] = metrics
 
-        # Save detailed report to txt
+        # salvataggio su txt
         report_path = os.path.join(output_dir, f"metrics_{task}.txt")
         with open(report_path, "w", encoding="utf-8") as f:
             f.write(f"Task: {task}\n")
@@ -287,7 +286,7 @@ def evaluate_tasks(
             for mk, mv in metrics.items():
                 f.write(f"{mk}: {mv:.6f}\n")
 
-            # Add some examples
+            # esempi
             f.write("\n" + "="*50 + "\n")
             f.write("Sample Predictions vs References:\n")
             f.write("="*50 + "\n")
@@ -297,11 +296,10 @@ def evaluate_tasks(
                 f.write(f"Reference:  {refs[i][:300]}{'...' if len(refs[i]) > 300 else ''}\n")
                 f.write("-" * 50 + "\n")
 
-        # Print summary
         for mk, mv in metrics.items():
             print(f"{mk}: {mv:.6f}")
 
-    # Save overall summary
+    # salvataggio summary complessivo
     summary_path = os.path.join(output_dir, "overall_summary.txt")
     with open(summary_path, "w", encoding="utf-8") as f:
         f.write("OVERALL EVALUATION SUMMARY\n")
@@ -313,9 +311,9 @@ def evaluate_tasks(
 
     return results
 
-def run_test_evaluation(model, test_dataset, tokenizer, device, MAX_LENGTH,ktop=False,kwords = 5):
+def run_test_evaluation(model, test_dataset, tokenizer, device, MAX_LENGTH, k_top=False, k_words = 5):
     """
-    Esegue la valutazione del modello sul test set usando greedy decoding.
+    Esegue la valutazione del modello sul test set.
     """
     model.eval()
     all_input = []
@@ -326,9 +324,8 @@ def run_test_evaluation(model, test_dataset, tokenizer, device, MAX_LENGTH,ktop=
     examples_shown = 0
     num_examples = 5
 
-    print(f"Starting test with GREEDY DECODING over {len(test_dataset)} batches...")
+    print(f"Starting test over {len(test_dataset)} batches...")
 
-    # Use proper greedy decoding for test evaluation
     sos_id = tokenizer.convert_tokens_to_ids("<SOS>")
     eos_id = tokenizer.convert_tokens_to_ids("<EOS>")
     pad_id = tokenizer.convert_tokens_to_ids("<PAD>")
@@ -339,52 +336,47 @@ def run_test_evaluation(model, test_dataset, tokenizer, device, MAX_LENGTH,ktop=
             src = batch['input_ids'].to(device)         # [B, S_in]
             tgt = batch['labels'].to(device)            # [B, S_out]
 
-            # Model expects [seq_len, batch]; transpose
             src_t = src.transpose(0, 1)                 # [S_in, B]
 
-            # In fase di test mettiamo topk words
-            predictions = greedy_decode(model, src_t, tokenizer, max_len=MAX_LENGTH//2, device=device,ktop=ktop,kwords=kwords)
-            print("prediction calculated")
-            # Prepare references (remove SOS token from beginning, EOS/PAD from end)
+            # generazione predizioni
+            predictions = greedy_decode(model, src_t, tokenizer, max_len=MAX_LENGTH // 2, device=device, top_k=k_top,
+                                        k_words=k_words)
+
+            # preparazione references (rimuove SOS dall'inzio, EOS/PAD dalla fine)
             references = []
 
             for i in range(tgt.size(0)):
                 ref_tokens = tgt[i].tolist()
 
-                # Remove SOS from beginning if present
                 if ref_tokens and ref_tokens[0] == sos_id:
                     ref_tokens = ref_tokens[1:]
 
-                # Remove PAD tokens
                 if pad_id is not None:
                     ref_tokens = [t for t in ref_tokens if t != pad_id]
 
-                # Remove EOS from end if present
                 if ref_tokens and eos_id is not None and ref_tokens[-1] == eos_id:
                     ref_tokens = ref_tokens[:-1]
-
+                # decodifica reference
                 ref_text = tokenizer.decode(ref_tokens, skip_special_tokens=False) if ref_tokens else ""
                 references.append(ref_text)
 
+            # estrazione e decodifica input
             src_tokens = src_t.tolist()
             src_tokens = [t for t in src_tokens if t != pad_id]
-            input_text_full_batch = []
-            input_text_full_batch.append([tokenizer.decode(t, skip_special_tokens=False) for t in src_tokens])
-            print("Input decoded")
-            # Collect results
+            input_text_full_batch = [[tokenizer.decode(t, skip_special_tokens=False) for t in src_tokens]]
+
             all_input.extend(input_text_full_batch)
             all_tasks.extend(tasks)
             all_predictions.extend(predictions)
             all_references.extend(references)
             total_examples += len(tasks)
 
-            # Show progress with some examples
+            # esempi di test
             if examples_shown < num_examples and batch_idx < 3:
                 for i in range(min(3, len(tasks))):
                     if examples_shown >= num_examples:
                         break
 
-                    # Decode input
                     src_tokens = src_t[:, i].tolist()
                     if pad_id is not None:
                         src_tokens = [t for t in src_tokens if t != pad_id]
@@ -397,8 +389,8 @@ def run_test_evaluation(model, test_dataset, tokenizer, device, MAX_LENGTH,ktop=
                     print("-" * 80)
                     examples_shown += 1
 
-    # Compute and save metrics per task
+    # metriche
     print(f"\nEvaluating {total_examples} examples across {len(set(all_tasks))} task types...")
-    evaluate_tasks(all_tasks, all_predictions, all_references,all_input, output_dir="test_results")
+    evaluate_tasks(all_tasks, all_predictions, all_references, all_input, output_dir="test_results")
 
     print(f"Results saved in 'test_results/' directory")
