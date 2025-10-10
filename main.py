@@ -169,4 +169,4 @@ if __name__ == '__main__':
             print("\n" + "="*80)
             print("STARTING TEST EVALUATION WITH PRE-TRAINED MODEL")
             print("="*80)
-            run_test_evaluation(model, test_dataset, tokenizer, device, MAX_LENGTH, ktop=True, kwords=3)
+            run_test_evaluation(model, test_dataset, tokenizer, device, MAX_LENGTH, k_top=True, k_words=3)
