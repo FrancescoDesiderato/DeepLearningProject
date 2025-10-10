@@ -138,7 +138,7 @@ if __name__ == '__main__':
                     num_epochs=NUM_EPOCHS,
                     device=device,
                     warm_restart=warm_restart,
-                    pad_idx=model.embedding.padding_idx)
+                    )
 
         # Salva il modello addestrato
         torch.save(model.state_dict(), "nanosocrates_transformer.pkl")

@@ -52,7 +52,7 @@ if model_training:
                 num_epochs=NUM_EPOCHS,
                 device=device,
                 warm_restart=warm_restart,
-                pad_idx=PAD_IDX)
+                )
 
 if test_flag:
 
