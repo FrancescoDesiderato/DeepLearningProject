@@ -26,10 +26,10 @@ def greedy_decode(model, src, tokenizer, max_len=128, device='cuda', top_k=False
                 # approccio top-k sampling
                 logits = output[-1, :, :]
                 probs = torch.softmax(logits, dim=-1)
-                # Prendo le prime 5 prob con i rispettivi indici
-                top_k_probs, top_k_indices = torch.topk(probs, k=k_words, dim=-1) # [batch_size,5]
+                # Prendo le prime k prob con i rispettivi indici
+                top_k_probs, top_k_indices = torch.topk(probs, k=k_words, dim=-1) # [batch_size,kwords]
 
-                # Scegli casualmente uno dei 5 token per ogni elemento del batch
+                # Scegli in maniera proporzionale alle probabilità uno dei token per ogni elemento del batch
                 next_token_index = torch.multinomial(top_k_probs, num_samples=1) # [batch_size,1]
                 # gather preleva da top_k_indices usando next_token_index come indice
                 next_token = torch.gather(top_k_indices, dim=1, index=next_token_index)
