@@ -81,7 +81,7 @@ class RotaryPositionalEmbedding(nn.Module):
         sin = sin.unsqueeze(1)
         cos = cos.to(dtype=x.dtype, device=x.device)
         sin = sin.to(dtype=x.dtype, device=x.device)
-        # Separiamo l'input in posizione pari e dispari
+        """# Separiamo l'input in posizione pari e dispari
         x_even = x[..., ::2]
         x_odd = x[..., 1::2]
         # Applico la rotazione nel piano 2D
@@ -90,7 +90,12 @@ class RotaryPositionalEmbedding(nn.Module):
         # Torch stack li metto nello stesso vettore
         x_rotated = torch.stack((rot_even, rot_odd), dim=-1) # [batch, n_heads, seq_len, head_dim/2, 2]
         # Fondiamo gli ultimi 2 assi affinchè abbia la stessa dim di x in entrata
-        x_rotated = x_rotated.flatten(-2) # [batch, n_heads, seq_len, head_dim]
+        x_rotated = x_rotated.flatten(-2) # [batch, n_heads, seq_len, head_dim]"""
+        # Rotazione in-place
+        x_rotated = torch.empty_like(x) #Creo un tensore di forma x e successivamente lo riempio
+        x_rotated[..., ::2] = x[..., ::2] * cos - x[..., 1::2] * sin
+        x_rotated[..., 1::2] = x[..., ::2] * sin + x[..., 1::2] * cos
+
         return x_rotated
 
 
@@ -110,45 +115,45 @@ class MultiLatentAttention(nn.Module):
         self.args = args
         self.layer_idx = layer_idx
         # Comprimiamo i vettori x in uno spazio latente ridotto e successivamente viene normalizzato
-        self.w_dq = nn.Linear(args.dim, args.q_compressed_dim)
+        self.w_reduce_q = nn.Linear(args.dim, args.q_compressed_dim)
         self.q_norm = RMSNorm(args.q_compressed_dim, args.norm_eps)
         # Pesi per la decompressione di nope e rope
-        self.w_uq = nn.Linear(args.q_compressed_dim, args.n_heads * args.q_nope_head_dim)
-        self.w_qr = nn.Linear(args.q_compressed_dim, args.n_heads * args.q_rope_head_dim)
+        self.w_nope_q = nn.Linear(args.q_compressed_dim, args.n_heads * args.q_nope_head_dim)
+        self.w_rope_q = nn.Linear(args.q_compressed_dim, args.n_heads * args.q_rope_head_dim)
         # Applicazione del rope su q e k, solo per le parti interessate
         self.rope_q = RotaryPositionalEmbedding(args, args.q_rope_head_dim)
         self.rope_k = RotaryPositionalEmbedding(args, args.k_rope_head_dim)
         # Pesi per la compressione kv
-        self.w_dkv = nn.Linear(args.dim, args.kv_compressed_dim)
+        self.w_reduce_kv = nn.Linear(args.dim, args.kv_compressed_dim)
         self.kv_norm = RMSNorm(args.kv_compressed_dim, args.norm_eps)
         # Pesi per la decompressione di k
-        self.w_uk = nn.Linear(args.kv_compressed_dim, args.n_kv_heads * args.k_nope_head_dim)
-        self.w_kr = nn.Linear(args.dim, 1 * args.k_rope_head_dim)
+        self.w_nope_kv = nn.Linear(args.kv_compressed_dim, args.n_kv_heads * args.k_nope_head_dim)
+        self.w_rope_kv = nn.Linear(args.dim, 1 * args.k_rope_head_dim) # Qui abbiamo una sola chiave, questo ci fa risparmiare memoria
         # Produce la decompressione di V, inoltre ricordiamo che non viene applicato il rope su questa parte
-        self.w_uv = nn.Linear(args.kv_compressed_dim, args.n_kv_heads * args.v_head_dim)
+        self.w_upscale_v = nn.Linear(args.kv_compressed_dim, args.n_kv_heads * args.v_head_dim)
         # Pesi per il feed forward net
         self.w_o = nn.Linear(args.n_heads * args.v_head_dim, args.dim)
 
     def forward(self, x: Tensor, position_ids: Tensor, attention_mask: Optional[Tensor] = None) -> Tensor:
         batch_size, q_seq_len, _ = x.shape # Prendo info sull'input x, l'ultima dim contiene i dati veri e propri
         # Comprimo q e kv + normalizzazione
-        compressed_q = self.q_norm(self.w_dq(x))
-        compressed_kv = self.kv_norm(self.w_dkv(x))
+        compressed_q = self.q_norm(self.w_reduce_q(x))
+        compressed_kv = self.kv_norm(self.w_reduce_kv(x))
         # Applicazione del Rope, solo sulla porzione indicata dal costruttore della classe
-        k_rope = self.w_kr(x)
+        k_rope = self.w_rope_kv(x)
         k_rope = k_rope.view(batch_size, q_seq_len, 1, self.args.k_rope_head_dim).transpose(1, 2)
         k_rope = self.rope_k(k_rope, position_ids)
         k_seq_len = compressed_kv.shape[-2]
         # Decomprimo la parte di rope e nope
-        q_nope = self.w_uq(compressed_q)
-        q_rope = self.w_qr(compressed_q)
+        q_nope = self.w_nope_q(compressed_q)
+        q_rope = self.w_rope_q(compressed_q)
         q_nope = q_nope.view(batch_size, q_seq_len, self.args.n_heads, self.args.q_nope_head_dim).transpose(1, 2)
         q_rope = q_rope.view(batch_size, q_seq_len, self.args.n_heads, self.args.q_rope_head_dim).transpose(1, 2)
         # Applico il rope su q
         q_rope = self.rope_q(q_rope, position_ids)
         # Riunisco sotto un unito vettore
         query_states = torch.cat((q_nope, q_rope), dim=-1)
-        k_nope = self.w_uk(compressed_kv)
+        k_nope = self.w_nope_kv(compressed_kv)
         k_nope = k_nope.view(batch_size, k_seq_len, self.args.n_kv_heads, self.args.k_nope_head_dim).transpose(1, 2)
         # Replico per le varie teste
         k_rope = repeat_kv_heads(k_rope, self.args.n_kv_heads)
@@ -156,7 +161,7 @@ class MultiLatentAttention(nn.Module):
         # Replico per le varie teste
         k_states = repeat_kv_heads(k_states, self.args.gqa_factor)
         # Decomprimo v
-        v_states = self.w_uv(compressed_kv)
+        v_states = self.w_upscale_v(compressed_kv)
         v_states = v_states.view(batch_size, k_seq_len, self.args.n_kv_heads, self.args.v_head_dim).transpose(1, 2)
         v_states = repeat_kv_heads(v_states, self.args.gqa_factor)
         # Applico il meccanismo di attenzione
@@ -330,7 +335,6 @@ class Transformer(nn.Module):
 
     def project(self, x):
         return self.projection_layer(x)
-
     def forward(self, src: torch.Tensor, tgt: torch.Tensor, src_mask: Optional[torch.Tensor] = None,
                 tgt_mask: Optional[torch.Tensor] = None) -> torch.Tensor:
         """
