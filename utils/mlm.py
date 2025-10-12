@@ -154,7 +154,8 @@ def train_mlm(data, model, epochs=1, device=None, lr=3e-4):
                 "avg": f"{running_loss / step:.4f}"
             })
 
-    torch.save(model.state_dict(), "mlm_model.pt")
+        torch.save(model.state_dict(), "mlm_model.pt")
+
     return model
 
 class CorpusMLMDataset(Dataset):

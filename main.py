@@ -118,17 +118,7 @@ if __name__ == '__main__':
             model = model.transformer
 
         if mlm_trained:
-            # TODO allineare con il notebook
-            mlm_state_dict = torch.load("mlm_model_166.pt", map_location=device)
-
-            # Estrae solo i pesi del transformer interno
-            transformer_state_dict = {}
-            for key, value in mlm_state_dict.items():
-                if key.startswith('transformer.'):
-                    new_key = key[12:]  # Rimuove 'transformer.'
-                    transformer_state_dict[new_key] = value
-
-            model.load_state_dict(transformer_state_dict)
+            model.load_state_dict(torch.load("mlm_model.pt"), strict=False)
             model.to(device)
 
         train_model(model=model,
