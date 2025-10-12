@@ -3,11 +3,10 @@ import json
 import re
 import unicodedata
 
-df = pd.read_json("5000_dataset/final_paired_dataset_5000.json")
 """
 PIPELINE:
 
-Eliminare i film con caratteri speciali e che iniziano con 3 punti
+Eliminare i film con caratteri speciali
 
 Eliminare ciò che è scritto in parentesi nel text(solitamente c'è il titolo in lingua originale)
 
@@ -29,37 +28,30 @@ new_data_tot = []
 count = 0
 # Iterare attraverso tutti i dizionari se sono in una lista
 for item in data:
-    title = item["uri"].split('/')[-1] #Prendo solo l'effettivo titolo del film
-    pattern = "^[a-zA-Z0-9 _]+$"
-    pattern_numbers = r'^\d'
-    pattern_ascii = r'[^\x00-\x7F]'
+    title = item["uri"].split('/')[-1] # Prendo solo l'effettivo titolo del film
+    pattern = "^[a-zA-Z0-9 _]+$" # Regex per eliminare i caratteri speciali
     new_data = {}
     #Verifichiamo che il titolo non contenga caratteri speciali [già questo potrebbe complicare l'apprendimento]
     if re.match(pattern, title):
-        if not re.match(pattern_numbers, title):
-            pattern_sub = r'\([^)]*\)'
-            new_text = re.sub(pattern_sub, "", item["text"])
-            new_text = to_ascii_equivalent(new_text)
-            new_data["uri"] = item["uri"]
-            new_data["text"] = new_text
-            new_triples = []
-            for triple in item["triples"]:
-                new_triple = {}
-                triple["object"] = re.sub(pattern_sub,"",triple["object"])
-                triple["subject"] = to_ascii_equivalent(triple["subject"])
-                triple["predicate"] = to_ascii_equivalent(triple["predicate"])
-                triple["object"] = to_ascii_equivalent(triple["object"])
+        pattern_sub = r'\([^)]*\)' # Regex per eliminare il testo presente in parentesi tonda
+        new_text = re.sub(pattern_sub, "", item["text"])
+        new_text = to_ascii_equivalent(new_text)
+        new_data["uri"] = item["uri"]
+        new_data["text"] = new_text
+        new_triples = []
+        for triple in item["triples"]:
+            new_triple = {}
+            triple["object"] = re.sub(pattern_sub,"",triple["object"])
+            triple["subject"] = to_ascii_equivalent(triple["subject"])
+            triple["predicate"] = to_ascii_equivalent(triple["predicate"])
+            triple["object"] = to_ascii_equivalent(triple["object"])
 
-                new_triples.append(
-                        {"subject": triple["subject"], "predicate": triple["predicate"], "object": triple["object"]})
+            new_triples.append(
+                    {"subject": triple["subject"], "predicate": triple["predicate"], "object": triple["object"]})
 
-                new_data["triples"] = new_triples
+            new_data["triples"] = new_triples
 
-            new_data_tot.append(new_data)
+        new_data_tot.append(new_data)
 
 with open('5000_dataset/final_paired_dataset_5000_rielaborate_no_nums.json', 'w', encoding='utf-8') as file:
     json.dump(new_data_tot, file, ensure_ascii=False, indent=4)
-print(count)
-
-
-print(df.head())
