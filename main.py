@@ -113,7 +113,7 @@ if __name__ == '__main__':
             mlm_loader = DataLoader(mlm_dataset, batch_size=BATCH_SIZE, shuffle=True, collate_fn=mlm_collator)
 
             model.to(device)
-            model = train_mlm(mlm_loader, model, epochs=100)
+            model = train_mlm(mlm_loader, model, epochs=100, device=device)
             torch.save(model, "nanosocrates_mlm.pkl")
             model = model.transformer
 
