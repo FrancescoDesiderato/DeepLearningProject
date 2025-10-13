@@ -11,17 +11,17 @@ weight_path = "../models/nanosocrates_transformer_interleaved_444_150(1).pkl"
 
 MAX_LENGTH = 256
 BATCH_SIZE = 64
-D_MODEL = 256               # Dimensione nascosta (embedding dimension)
-N_HEADS = 4                 # Numero di teste di attenzione (deve dividere D_MODEL)
-NUM_ENCODER_LAYERS = 4      # Numero di layer nell'encoder
-NUM_DECODER_LAYERS = 4      # Numero di layer nel decoder
-FFN_HID_DIM = 256           # Dimensione del layer nascosto nella Feed-Forward Network
+D_MODEL = 256
+N_HEADS = 4
+NUM_ENCODER_LAYERS = 4
+NUM_DECODER_LAYERS = 4
+FFN_HID_DIM = 256
 DROPOUT = 0.3
-NUM_EPOCHS = 100            # Number of Epochs for Training
+NUM_EPOCHS = 100
 
-warm_restart = True        # Set to TRUE if you want to use warm restarts
+scheduler_flag = True
 model_training = False
-test_flag = True            # Set to TRUE if you want to test
+test_flag = True
 
 _, train_dataset, val_dataset, test_dataset = dataLoaderFromCSV(csv_file, tokenizer_path, MAX_LENGTH, BATCH_SIZE)
 tokenizer = PreTrainedTokenizerFast(tokenizer_file=tokenizer_path)
@@ -51,7 +51,7 @@ if model_training:
                 tokenizer=tokenizer,
                 num_epochs=NUM_EPOCHS,
                 device=device,
-                warm_restart=warm_restart,
+                scheduler_flag=scheduler_flag,
                 )
 
 if test_flag:

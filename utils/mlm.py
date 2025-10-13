@@ -60,7 +60,7 @@ class MLM(nn.Module):
         transformer,
         mask_prob=0.15, # mascheramento del 15%
         replace_prob=0.9, # 90% delle volte con <MASKMLM>, 10% inalterato o token random
-        num_tokens=None,
+        num_tokens=None, # dimensione del vocabolario (richiesto se random_token_prob > 0)
         random_token_prob=0.1,
         mask_token_id=2,
         pad_token_id=0,
@@ -78,10 +78,7 @@ class MLM(nn.Module):
         self.mask_ignore_token_ids = set([*mask_ignore_token_ids, pad_token_id])
 
     def forward(self, seq, attention_mask=None, **kwargs):
-        # input può essere dict (con attention_mask) o tensor
-        if isinstance(seq, dict):
-            attention_mask = seq.get("attention_mask", attention_mask)
-            seq = seq["input_ids"]
+
         if seq.dtype != torch.long:
             seq = seq.long()
 

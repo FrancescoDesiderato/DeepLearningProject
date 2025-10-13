@@ -8,35 +8,40 @@ from utils.train import *
 from utils.mlm import MLM, train_mlm
 from utils.evaluation import run_test_evaluation
 
-page_size = 5000            # Max number of pages
-test_enable = True          # Toy Dataset Flag
-n_film = 150
-underscoreRemoval = True    # The Tokenizer breaks word every _ too
+# CONFIGURAZIONE DATASET
+page_size = 5000            # Numero massimo di pagine da scaricare da DBPedia
+test_enable = True          # Toy Dataset Flag: se TRUE compone un JSON che comprende solo n_film film
+n_film = 150                # Numero di film da scaricare (se test_enable è TRUE)
+underscoreRemoval = True    # Il tokenizer rimuove gli underscore dai token
 VOCAB_SIZE = 32000          # Max Vocabulary Size
 MAX_LENGTH = 256            # Max Seq length
-BATCH_SIZE = 64              # Batch Size for Training
-NUM_EPOCHS = 150            # Number of Epochs for Training
-dataset_size = 1500        # Set to a number to limit the dataset size (for testing purposes)
+dataset_size = 1500         # Limita il numero di samples nel dataset
+full_balancing = True       # TRUE se si vuole bilanciare il dataset in modo che che ogni task abbia lo stesso numero di occorrenze
 
-csv_file = "processed_samples.csv"
-tokenizer_path = "500_dataset/tokenizer_500.json"
+csv_file = "processed_samples.csv" # Percorso del file CSV
+tokenizer_path = "500_dataset/tokenizer_500.json" # Percorso del tokenizer
 
-dataset_created = True     # Set to TRUE if you have the csv data
-enable_mlm = False          # Set to TRUE if you want to use MLM during training
-mlm_trained = False         # Set to TRUE if you want to load a pre-trained MLM model
-full_balancing = True       # Set to TRUE if you want truly balanced dataset (only 1 sample for masking and continuerdf)
-scheduler_flag = True        # Set to TRUE if you want to use warm restarts
-overfit_test = False      # Set to TRUE if you want to overfit on a small dataset
-test_flag = True            # Set to TRUE if you want to test
-model_training = False      # Set to TRUE if you need to train the model, FALSE if you already have the weights
+# CONFIGURAZIONE TRAINING
+dataset_created = True      # TRUE se il dataset è già stato creato e salvato in CSV, FALSE altrimenti
+enable_mlm = False          # TRUE se si vuole abilitare il Masked Language Modeling durante l'addestramento
+mlm_trained = False         # TRUE se si vuole caricare un modello MLM già addestrato
+scheduler_flag = True       # TRUE se si vuole abilitare il learning rate scheduler
+overfit_test = False        # TRUE se si vuole fare un overfit test su un singolo batch
+test_flag = True            # TRUE se si vuole eseguire la valutazione sul test set
+model_training = False      # TRUE se si vuole addestrare il modello, FALSE se si vuole caricare un modello pre-addestrato
+NUM_EPOCHS = 150            # Epoche di addestramento
+k_top = False               # TRUE se si vuole abilitare la valutazione K-top
+k_words = 3                   # Numero di predizioni da considerare nella valutazione K-top
 
-D_MODEL = 256               # Dimensione nascosta (embedding dimension)
+# CONFIGURAZIONE MODELLO
+BATCH_SIZE = 64             # Batch Size
+D_MODEL = 256               # Dimensione del modello (attenzione)
 N_HEADS = 4                 # Numero di teste di attenzione (deve dividere D_MODEL)
 NUM_ENCODER_LAYERS = 4      # Numero di layer nell'encoder
 NUM_DECODER_LAYERS = 4      # Numero di layer nel decoder
 FFN_HID_DIM = 256           # Dimensione del layer nascosto nella Feed-Forward Network
-DROPOUT = 0.3
-weight_path = "models/nanosocrates_transformer_PRETRAINED_444_150.pkl"
+DROPOUT = 0.3               # Dropout rate
+weight_path = "models/nanosocrates_transformer_PRETRAINED_444_150.pkl" # Percorso del modello pre-addestrato
 
 if __name__ == '__main__':
 
@@ -50,13 +55,6 @@ if __name__ == '__main__':
 
     tokenizer = PreTrainedTokenizerFast(tokenizer_file=tokenizer_path)
     PAD_IDX = tokenizer.convert_tokens_to_ids("<PAD>")
-
-    # Debug tokenizer
-    sample_text = "<SOS> <SOT> <SUBJ> dbr :' If Only ' Jim <PRED> dbo : director <OBJ> dbr : Jacques Jaccard <EOT> <EOS>"
-    tokens = tokenizer.encode(sample_text)
-    print(f"Original: {sample_text}")
-    print(f"Tokens: {tokens}")
-    print(f"Decoded: {tokenizer.decode(tokens, skip_special_tokens=False)}")
 
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
     print(device)
@@ -130,7 +128,6 @@ if __name__ == '__main__':
                     scheduler_flag=scheduler_flag,
                     )
 
-        # Salva il modello addestrato
         torch.save(model.state_dict(), "nanosocrates_transformer.pkl")
 
         if test_flag:
@@ -159,4 +156,4 @@ if __name__ == '__main__':
             print("\n" + "="*80)
             print("STARTING TEST EVALUATION WITH PRE-TRAINED MODEL")
             print("="*80)
-            run_test_evaluation(model, test_dataset, tokenizer, device, MAX_LENGTH, k_top=True, k_words=3)
+            run_test_evaluation(model, test_dataset, tokenizer, device, MAX_LENGTH, k_top=k_top, k_words=k_words)
