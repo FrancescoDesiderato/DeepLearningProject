@@ -361,11 +361,13 @@ def run_test_evaluation(model, test_dataset, tokenizer, device, MAX_LENGTH, k_to
                 references.append(ref_text)
 
             # estrazione e decodifica input
-            src_tokens = src_t.tolist()
-            src_tokens = [t for t in src_tokens if t != pad_id]
-            input_text_full_batch = [[tokenizer.decode(t, skip_special_tokens=False) for t in src_tokens]]
+            for i in range(src.size(0)):  # Itera su ogni esempio nel batch
+                src_tokens = src[i].tolist()
+                if pad_id is not None:
+                    src_tokens = [t for t in src_tokens if t != pad_id]
+                input_text = tokenizer.decode(src_tokens, skip_special_tokens=False) if src_tokens else ""
+                all_input.append(input_text)
 
-            all_input.extend(input_text_full_batch)
             all_tasks.extend(tasks)
             all_predictions.extend(predictions)
             all_references.extend(references)

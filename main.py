@@ -12,9 +12,8 @@ from utils.evaluation import run_test_evaluation
 page_size = 5000            # Numero massimo di pagine da scaricare da DBPedia
 test_enable = True          # Toy Dataset Flag: se TRUE compone un JSON che comprende solo n_film film
 n_film = 150                # Numero di film da scaricare (se test_enable è TRUE)
-underscoreRemoval = True    # Il tokenizer rimuove gli underscore dai token
+underscoreRemoval = True    # Il tokenizer separa le parole anche in corrispondenza del carattere underscore
 VOCAB_SIZE = 32000          # Max Vocabulary Size
-MAX_LENGTH = 256            # Max Seq length
 dataset_size = 1500         # Limita il numero di samples nel dataset
 full_balancing = True       # TRUE se si vuole bilanciare il dataset in modo che che ogni task abbia lo stesso numero di occorrenze
 
@@ -31,11 +30,12 @@ test_flag = True            # TRUE se si vuole eseguire la valutazione sul test 
 model_training = False      # TRUE se si vuole addestrare il modello, FALSE se si vuole caricare un modello pre-addestrato
 NUM_EPOCHS = 150            # Epoche di addestramento
 k_top = False               # TRUE se si vuole abilitare la valutazione K-top
-k_words = 3                   # Numero di predizioni da considerare nella valutazione K-top
+k_words = 3                 # Numero di predizioni da considerare nella valutazione K-top
 
 # CONFIGURAZIONE MODELLO
 BATCH_SIZE = 64             # Batch Size
 D_MODEL = 256               # Dimensione del modello (attenzione)
+MAX_LENGTH = 256            # Max Seq length
 N_HEADS = 4                 # Numero di teste di attenzione (deve dividere D_MODEL)
 NUM_ENCODER_LAYERS = 4      # Numero di layer nell'encoder
 NUM_DECODER_LAYERS = 4      # Numero di layer nel decoder
@@ -67,7 +67,9 @@ if __name__ == '__main__':
             n_heads=N_HEADS,
             num_encoder_layers=NUM_ENCODER_LAYERS,
             num_decoder_layers=NUM_DECODER_LAYERS,
-            ffn_hid_dim=FFN_HID_DIM
+            ffn_hid_dim=FFN_HID_DIM,
+            dropout=DROPOUT,
+            max_len=MAX_LENGTH
         )
         model.embedding.padding_idx = PAD_IDX
         model.to(device)
@@ -145,7 +147,9 @@ if __name__ == '__main__':
             n_heads=N_HEADS,
             num_encoder_layers=NUM_ENCODER_LAYERS,
             num_decoder_layers=NUM_DECODER_LAYERS,
-            ffn_hid_dim=FFN_HID_DIM
+            ffn_hid_dim=FFN_HID_DIM,
+            dropout=DROPOUT,
+            max_len=MAX_LENGTH
         )
 
         model.embedding.padding_idx = PAD_IDX

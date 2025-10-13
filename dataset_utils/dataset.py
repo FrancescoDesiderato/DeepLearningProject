@@ -26,18 +26,10 @@ class NanoSocratesDataset(Dataset):
         input_encoding = self.tokenizer.encode(input_text)
         target_encoding = self.tokenizer.encode(target_text)
 
-        # Assicura che EOS sia sempre presente
-        eos_id = self.tokenizer.token_to_id("<EOS>")
-        if len(target_encoding.ids) >= self.max_length and eos_id is not None:
-            # Tronca a max_length-1 e aggiungi EOS
-            target_ids = target_encoding.ids[:self.max_length - 1] + [eos_id]
-        else:
-            target_ids = target_encoding.ids
-
         return {
             "task": task,
             "input_ids": torch.tensor(input_encoding.ids, dtype=torch.long),
-            "labels": torch.tensor(target_ids, dtype=torch.long)
+            "labels": torch.tensor(target_encoding.ids, dtype=torch.long)
         }
 
 

@@ -11,6 +11,7 @@ class NanoSocratesTransformer(nn.Module):
                  num_encoder_layers,
                  num_decoder_layers,
                  ffn_hid_dim,
+                 max_len,
                  dropout=0.1):
         super().__init__()
         self.d_model = d_model
@@ -19,7 +20,7 @@ class NanoSocratesTransformer(nn.Module):
         self.embedding = nn.Embedding(vocab_size, d_model)
 
         # Positional Encoding
-        self.pos_encoder = PositionalEncoding(d_model)
+        self.pos_encoder = PositionalEncoding(d_model, max_len=512)
 
         # Transformer di PyTorch
         self.transformer = nn.Transformer(
