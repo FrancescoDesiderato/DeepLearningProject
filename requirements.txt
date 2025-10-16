@@ -1,6 +1,9 @@
-python==3.11
-torch
-SPARQLWrapper
-tqdm
-transformers
-evaluate
+evaluate==0.4.6
+pandas==2.3.3
+scikit_learn==1.7.2
+SPARQLWrapper==2.0.0
+SPARQLWrapper==2.0.0
+tokenizers==0.22.1
+torch==2.8.0
+tqdm==4.67.1
+transformers==4.56.2
