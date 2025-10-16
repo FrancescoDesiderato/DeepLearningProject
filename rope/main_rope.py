@@ -8,8 +8,8 @@ from utils.train import train_model
 csv_file = "../processed_samples.csv"
 tokenizer_path = "../tokenizer.json"
 weight_path = "nanosocrates_transformer_rope_444_150.pkl"
-model_training = False
-test_flag = True
+model_training = True
+test_flag = False
 
 MAX_LENGTH = 256
 BATCH_SIZE = 64

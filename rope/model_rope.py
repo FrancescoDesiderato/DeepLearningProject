@@ -115,23 +115,26 @@ class ROPEAttentionBlock(nn.Module):
 
 
     @staticmethod
-    def attention(query, key, value, mask, dropout: nn.Dropout):# mask => When we want certain words to NOT interact with others, we "hide" them
+    def attention(query, key, value, attn_mask, dropout: nn.Dropout):
+        d_k = query.shape[-1]
 
-        d_k = query.shape[-1] # The last dimension of query, key, and value
+        # Calcola attention scores: (batch, heads, seq_len_q, seq_len_k)
+        attention_scores = (query @ key.transpose(-2, -1)) / math.sqrt(d_k)
 
-        # We calculate the Attention(Q,K,V) as in the formula in the image above
-        attention_scores = (query @ key.transpose(-2,-1)) / math.sqrt(d_k) # @ = Matrix multiplication sign in PyTorch
+        # Applica attn_mask causale (deve avere shape compatibile con attention_scores)
+        if attn_mask is not None:
+            # attn_mask dovrebbe essere (seq_len_q, seq_len_k) o (batch, heads, seq_len_q, seq_len_k)
+            #attention_scores = attention_scores.masked_fill(attn_mask == 0, -1e9)
+            attention_scores.masked_fill_(attn_mask == 0, -1e9)
 
-        # Before applying the softmax, we apply the mask to hide some interactions between words
-        if mask is not None: # If a mask IS defined...
-            attention_scores.masked_fill_(mask == 0, -1e9) # Replace each value where mask is equal to 0 by -1e9
-        attention_scores = attention_scores.softmax(dim = -1) # Applying softmax
-        if dropout is not None: # If a dropout IS defined...
-            attention_scores = dropout(attention_scores) # We apply dropout to prevent overfitting
+        attention_scores = attention_scores.softmax(dim=-1)
 
-        return (attention_scores @ value), attention_scores # Multiply the output matrix by the V matrix, as in the formula
+        if dropout is not None:
+            attention_scores = dropout(attention_scores)
 
-    def forward(self, q, k, v, position_ids,mask):
+        return (attention_scores @ value), attention_scores
+
+    def forward(self, q, k, v, position_ids,attn_mask=None):
 
         query = self.w_q(q) # Q' matrix
         key = self.w_k(k) # K' matrix
@@ -141,7 +144,6 @@ class ROPEAttentionBlock(nn.Module):
         query = self.rope_q(query,position_ids)
         key = self.rope_k(key,position_ids)
 
-
         # Splitting results into smaller matrices for the different heads
         # Splitting embeddings (third dimension) into h parts
         query = query.view(query.shape[0], query.shape[1], self.h, self.d_k).transpose(1,2) # Transpose => bring the head to the second dimension
@@ -149,7 +151,7 @@ class ROPEAttentionBlock(nn.Module):
         value = value.view(value.shape[0], value.shape[1], self.h, self.d_k).transpose(1,2) # Transpose => bring the head to the second dimension
 
         # Obtaining the output and the attention scores
-        x, self.attention_scores = ROPEAttentionBlock.attention(query, key, value, mask, self.dropout)
+        x, self.attention_scores = ROPEAttentionBlock.attention(query, key, value, attn_mask, self.dropout)
 
         # Obtaining the H matrix
         x = x.transpose(1, 2).contiguous().view(x.shape[0], -1, self.h * self.d_k)
@@ -176,7 +178,7 @@ class EncoderBlock(nn.Module):
 
     def forward(self, x,position_ids,mask=None):
         # Multi-Head Attention sublayer con residual connection
-        attn_output = self.rope_attention(x, x, x, position_ids,mask=None)
+        attn_output = self.rope_attention(x, x, x, position_ids,attn_mask=None)
         # gestione manuale del padding
         if mask is not None:
             pad = mask.transpose(0, 1).unsqueeze(-1)  # [S, B, 1]
@@ -227,6 +229,50 @@ class Encoder(nn.Module):
             output = layer(output, position_ids,mask=src_key_padding_mask)
         return self.norm(output)
 
+class Decoder(nn.Module):
+    def __init__(self,num_layers, d_model, n_heads, ffn_hid_dim, dropout=0.1,max_lenght=256) -> None:
+        super().__init__()
+        self.layers = nn.ModuleList() # lista di layer
+        for i in range(num_layers):
+            layer = DecoderBlockRope(d_model,ffn_hid_dim, n_heads, dropout,max_lenght)
+            self.layers.append(layer)
+        self.norm = nn.LayerNorm(d_model) # normalizzazione finale
+
+    def forward(self, x, encoder_output, src_mask, tgt_mask,tgt_key_padding_mask):
+        batch_size, seq_len, _ = x.shape
+        position_ids = torch.arange(seq_len, dtype=torch.long, device=x.device).unsqueeze(0).repeat(batch_size, 1)
+
+        for layer in self.layers:
+            x = layer(x, encoder_output, position_ids, src_mask, tgt_mask,tgt_key_padding_mask)
+        return self.norm(x)
+
+class DecoderBlockRope(nn.Module):
+    def __init__(self, d_model,ffn_hid_dim,n_heads, dropout,max_lenght=256) -> None:
+        super().__init__()
+        self.self_attention_block = ROPEAttentionBlock(d_model, n_heads, dropout,max_lenght)
+        self.cross_attention_block = nn.MultiheadAttention(d_model, n_heads, dropout=dropout, batch_first=False)
+        self.linear1 = nn.Linear(d_model, ffn_hid_dim)
+        self.linear2 = nn.Linear(ffn_hid_dim, d_model)
+        self.norm1 = nn.LayerNorm(d_model)
+        self.norm2 = nn.LayerNorm(d_model)
+        self.norm3 = nn.LayerNorm(d_model)
+        self.dropout = nn.Dropout(dropout)
+        self.activation = nn.ReLU()
+
+    def forward(self, x, encoder_output, position_ids, src_mask, tgt_mask_in,tgt_key_padding_mask):
+        # Self-Attention con MLA
+        h = self.self_attention_block(self.norm1(x),self.norm1(x),self.norm1(x), position_ids, tgt_mask_in)
+        x = x + self.dropout(h)
+        # Cross-Attention con MHA originale
+        h = self.cross_attention_block(self.norm2(x), encoder_output, encoder_output, src_mask)
+        x = x + self.dropout(h)
+        # Feed-Forward
+        h = self.linear1(self.norm3(x))
+        h = self.linear2(self.activation(h))
+        x = x + self.dropout(h)
+
+        return x
+
 class NanoSocratesTransformerROPE(nn.Module):
     def __init__(self,
                  vocab_size,
@@ -254,15 +300,15 @@ class NanoSocratesTransformerROPE(nn.Module):
             max_lenght=max_lenght
         )
 
-        # decoder standard di PyTorch
-        decoder_layer = nn.TransformerDecoderLayer(
+        self.decoder = Decoder(
+            num_layers=num_decoder_layers,
             d_model=d_model,
-            nhead=n_heads,
-            dim_feedforward=ffn_hid_dim,
+            n_heads=n_heads,
+            ffn_hid_dim=ffn_hid_dim,
             dropout=dropout,
-            batch_first=False
+            max_lenght=max_lenght
         )
-        self.decoder = nn.TransformerDecoder(decoder_layer, num_layers=num_decoder_layers)
+
         self.output = nn.Linear(d_model, vocab_size)
 
     def _generate_square_subsequent_mask(self, sz):
@@ -288,10 +334,10 @@ class NanoSocratesTransformerROPE(nn.Module):
 
         encoder = self.encoder(src_emb, src_key_padding_mask=src_padding_mask)
         out = self.decoder(
-            tgt=tgt_emb,
-            memory=encoder,
+            x=tgt_emb,
+            encoder_output=encoder,
+            src_mask=src_padding_mask,
             tgt_mask=tgt_mask,
             tgt_key_padding_mask=tgt_padding_mask,
-            memory_key_padding_mask=src_padding_mask
         )
         return self.output(out)
