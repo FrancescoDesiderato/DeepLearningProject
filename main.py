@@ -14,11 +14,10 @@ test_enable = True          # Toy Dataset Flag: se TRUE compone un JSON che comp
 n_film = 150                # Numero di film da scaricare (se test_enable è TRUE)
 underscoreRemoval = True    # Il tokenizer separa le parole anche in corrispondenza del carattere underscore
 VOCAB_SIZE = 32000          # Max Vocabulary Size
-dataset_size = 1500         # Limita il numero di samples nel dataset
 full_balancing = True       # TRUE se si vuole bilanciare il dataset in modo che che ogni task abbia lo stesso numero di occorrenze
 
 csv_file = "processed_samples.csv" # Percorso del file CSV
-tokenizer_path = "500_dataset/tokenizer_500.json" # Percorso del tokenizer
+tokenizer_path = "tokenizer.json" # Percorso del tokenizer
 
 # CONFIGURAZIONE TRAINING
 dataset_created = True      # TRUE se il dataset è già stato creato e salvato in CSV, FALSE altrimenti
@@ -41,7 +40,7 @@ NUM_ENCODER_LAYERS = 4      # Numero di layer nell'encoder
 NUM_DECODER_LAYERS = 4      # Numero di layer nel decoder
 FFN_HID_DIM = 256           # Dimensione del layer nascosto nella Feed-Forward Network
 DROPOUT = 0.3               # Dropout rate
-weight_path = "models/nanosocrates_transformer_PRETRAINED_444_150.pkl" # Percorso del modello pre-addestrato
+weight_path = "nanosocrates_transformer_150_wd.pkl" # Percorso del modello pre-addestrato
 
 if __name__ == '__main__':
 
@@ -49,7 +48,7 @@ if __name__ == '__main__':
         _, train_dataset, val_dataset, test_dataset = dataLoaderFromCSV(csv_file, tokenizer_path, MAX_LENGTH, BATCH_SIZE)
     else:
         dataset = DatasetConstruction(page_size, test_enable, underscoreRemoval,
-                                      VOCAB_SIZE, MAX_LENGTH, BATCH_SIZE, full_balancing, dataset_size, n_film)
+                                      VOCAB_SIZE, MAX_LENGTH, BATCH_SIZE, full_balancing, n_film)
         _, train_dataset, val_dataset, test_dataset = dataset.pipeline()
 
 

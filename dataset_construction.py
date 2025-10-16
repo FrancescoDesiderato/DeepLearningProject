@@ -8,7 +8,7 @@ class DatasetConstruction:
     def __init__(self, page_size = 5000,
                  test_enable = True, underscoreRemoval = True,
                  VOCAB_SIZE = 32000, MAX_LENGTH = 512, BATCH_SIZE = 8,
-                 full_balancing = False, dataset_size = None, n_film = 150):
+                 full_balancing = False, n_film = 150):
         self.page_size = page_size
         self.test_enable = test_enable
         self.underscoreRemoval = underscoreRemoval
@@ -16,7 +16,6 @@ class DatasetConstruction:
         self.MAX_LENGTH = MAX_LENGTH
         self.BATCH_SIZE = BATCH_SIZE
         self.full_balancing = full_balancing
-        self.dataset_size = dataset_size
         self.n_film = n_film
 
     def pipeline(self):
@@ -43,7 +42,7 @@ class DatasetConstruction:
         #5-DATASET
         csv_filename = "processed_samples.csv"
         datasetFormattingClass = DatasetFormatting(output_filename_json, tokenizer_path, csv_filename,
-                                                   self.MAX_LENGTH, self.BATCH_SIZE, self.full_balancing, self.dataset_size)
+                                                   self.MAX_LENGTH, self.BATCH_SIZE, self.full_balancing)
         tokenizer, train_dataset, val_dataset, test_dataset = datasetFormattingClass.compute()
 
         return tokenizer, train_dataset, val_dataset, test_dataset

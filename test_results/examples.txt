@@ -1,29 +1,48 @@
-Test Example 1 - Task: Text2RDF
-Input: ' If Only ' Jim is a 1920 American silent Western film directed by Jacques Jaccard and starring Harry Carey . The film is based on Philip Verrill Mighel ' s 1904 novel Bruvver Jim ' s Baby . It is not...
-Reference: dbr :' If Only ' Jim dbo : director dbr : Jacques Jaccard dbr :' If Only ' Jim dbo : distributor dbr : Universal Studios dbr :' If Only ' Jim dbo : language dbr : Silent film dbr :' If Only ' Jim dbo ...
-Prediction: dbr :' Til Kingdom Come ( film ) dbo : director dbr : Abraham Troen dbr :' Til Kingdom Come ( film ) dbo : producer dbr : Maya Zinshtein dbr :' Til Kingdom Come ( film ) dbo : producer dbr : John Batt...
---------------------------------------------------------------------------------
+Output Examples of various Tasks
+==================================================
 
-Test Example 2 - Task: Text2RDF
-Input: ' Allo ' Allo ! is a British sitcom television series , created by David Croft and Jeremy Lloyd , starring Gorden Kaye , Carmen Silvera , Guy Siner and Richard Gibson . Originally broadcast on BBC1 , ...
-Reference: dbr :' Allo ' Allo ! dbo : director dbr : David Croft ( TV producer ) dbr :' Allo ' Allo ! dbo : director dbr : Mike Stephens ( director ) dbr :' Allo ' Allo ! dbo : director dbr : Susan Belbin dbr :'...
-Prediction: dbr :' Neath the Arizona Skies dbo : director dbr : John D . Reeves Eason dbr :' Neath the Arizona Skies dbo : producer dbr : John D . Lippert dbr :' Neath the Arizona Skies dbo : producer dbr : John ...
---------------------------------------------------------------------------------
+Task: CONTINUERDF
+Example 1:
+Prediction: <SOT> <SUBJ> dbr : 008 : Operation Exterminate <PRED> dbo : writer <OBJ> dbr : Umberto Lenzi <EOT>
+Reference:  <SOT> <SUBJ> dbr : 008 : Operation Exterminate <PRED> dbo : cinematography <OBJ> dbr : Augusto Tiezzi <EOT> <SOT> <SUBJ> dbr : 008 : Operation Exterminate <PRED> dbo : director <OBJ> dbr : Umberto Lenzi <EOT> <SOT> <SUBJ> dbr : 008 : Operation Exterminate <PRED> dbo : language <OBJ> dbr : Cinema of ...
+--------------------------------------------------
 
-Test Example 3 - Task: CONTINUERDF
-Input: dbr :' Neath the Arizona Skies dbo : distributor dbr : Monogram Pictures Corporation
-Reference: dbr :' Neath the Arizona Skies dbo : producer dbr : Paul Malvern
-Prediction: dbr :' Neath the Arizona Skies dbo : distributor dbr : Sheila Terry ( actor )
---------------------------------------------------------------------------------
+Example 2:
+Prediction: <SOT> <SUBJ> dbr :. hack // Roots <PRED> dbo : director <OBJ> dbr : Koichi Mashimo <EOT> <SOT> <SUBJ> dbr :. hack // Roots <PRED> dbo : writer <OBJ> dbr : Miu Kawasaki <EOT>
+Reference:  <SOT> <SUBJ> dbr :. hack // Roots <PRED> dbo : director <OBJ> dbr : Koichi Mashimo <EOT> <SOT> <SUBJ> dbr :. hack // Roots <PRED> dbo : writer <OBJ> dbr : Miu Kawasaki <EOT>
+--------------------------------------------------
 
-Test Example 4 - Task: CONTINUERDF
-Input: dbr :' Til Kingdom Come ( film ) dbo : producer dbr : Maya Zinshtein
-Reference: dbr :' Til Kingdom Come ( film ) dbo : country dbr : United States
-Prediction: dbr :' Til Kingdom Come ( film ) dbo : producer dbr : Maya Zinshtein
---------------------------------------------------------------------------------
+Task: MASK
+Example 1:
+Prediction: <SOT> <SUBJ> dbr : 10 . 5 : Apocalypse <PRED> dbo : starring <OBJ> dbr : Beau Bridges <EOT>
+Reference:  <SOT> <SUBJ> dbr : 10 . 5 : Apocalypse <PRED> dbo : director <OBJ> dbr : John Lafia <EOT>
+--------------------------------------------------
 
-Test Example 5 - Task: MASK
-Input: dbr :' Blue Blazes ' Rawden dbo : cinematography
-Reference: dbr :' Blue Blazes ' Rawden dbo : cinematography dbr : Joseph H . August
-Prediction: dbr :' Blue Blazes ' Rawden dbo : starring dbr : Robert Gordon ( actor )
---------------------------------------------------------------------------------
+Example 2:
+Prediction: <SOT> <SUBJ> dbr : 01 January <PRED> dbo : writer <OBJ> dbr : Yoosuf Shafeeu <EOT>
+Reference:  <SOT> <SUBJ> dbr : 01 January <PRED> dbo : director <OBJ> dbr : Yoosuf Shafeeu <EOT>
+--------------------------------------------------
+
+Task: RDF2Text
+
+Example 1:
+Prediction: ? ( also written Tanda Tanya , meaning Question Mark ) is a 2011 Indonesian drama film directed by Hanung Bramantyo . It stars Revalina Sayuthi Temat , Reza Rahadian , Agus Kuncoro , Endhita , Rio Dewanto , and Hengky Sulaeman . The film focuses around Indonesia ' s religious pluralism , which often...
+Reference:  ?: A Question Mark is a 2012 Hindi language horror film written and directed by Allyson Patel & Yash Dave and produced by Trippletake Motion Pictures . It was distributed by Percept Picture Company . The film received nine nominations and two awards at the St . Tropez International Film Festival , F...
+--------------------------------------------------
+
+Example 2:
+Prediction: ' 38 – Vienna Before the Fall ( German : 38 – Auch das war Wien ) is a 1987 Austrian - West German co - produced drama film directed by Wolfgang Glück . It was nominated for the Academy Award for Best Foreign Language Film at the 59th Academy Awards . The German title is literally translated as ' 38...
+Reference:  ' 38 – Vienna Before the Fall ( German : 38 – Auch das war Wien ) is a 1987 Austrian - West German co - produced drama film directed by Wolfgang Glück . It was nominated for the Academy Award for Best Foreign Language Film at the 59th Academy Awards . The German title is literally translated as ' 38...
+--------------------------------------------------
+
+Task: Text2RDF
+
+Example 1:
+Prediction: <SOT> <SUBJ> dbr :' Til There Was You <PRED> dbo : director <OBJ> dbr : Scott Winant <EOT> <SOT> <SUBJ> dbr :' Til There Was You <PRED> dbo : distributor <OBJ> dbr : Paramount Pictures <EOT> <SOT> <SUBJ> dbr :' Til There Was You <PRED> dbo : distributor <OBJ> dbr : Summit Entertainment <EOT> <SOT> <...
+Reference:  <SOT> <SUBJ> dbr :' Til Kingdom Come ( film ) <PRED> dbo : cinematography <OBJ> dbr : Abraham Troen <EOT> <SOT> <SUBJ> dbr :' Til Kingdom Come ( film ) <PRED> dbo : country <OBJ> dbr : United States <EOT> <SOT> <SUBJ> dbr :' Til Kingdom Come ( film ) <PRED> dbo : country <OBJ> dbr : Israel <EOT> <SO...
+--------------------------------------------------
+
+Example 2:
+Prediction: <SOT> <SUBJ> dbr : 08 / 15 ( film series ) <PRED> dbo : cinematography <OBJ> dbr : Heinz Hölscher <EOT> <SOT> <SUBJ> dbr : 08 / 15 ( film series ) <PRED> dbo : director <OBJ> dbr : Paul May <EOT> <SOT> <SUBJ> dbr : 08 / 15 ( film series ) <PRED> dbo : editing <OBJ> dbr : Walter Boos <EOT> <SOT> <SUB...
+Reference:  <SOT> <SUBJ> dbr : 08 / 15 ( film series ) <PRED> dbo : cinematography <OBJ> dbr : Heinz Hölscher <EOT> <SOT> <SUBJ> dbr : 08 / 15 ( film series ) <PRED> dbo : director <OBJ> dbr : Paul May <EOT> <SOT> <SUBJ> dbr : 08 / 15 ( film series ) <PRED> dbo : editing <OBJ> dbr : Walter Boos <EOT> <SOT> <SUB...
+--------------------------------------------------
