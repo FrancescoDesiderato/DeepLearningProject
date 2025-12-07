@@ -5,6 +5,7 @@ from tqdm import tqdm
 dbpedia_endpoint_url = "https://dbpedia.org/sparql"
 sparql = SPARQLWrapper(dbpedia_endpoint_url)
 sparql.setReturnFormat(JSON)
+# Predicati da estrarre
 PREDICATE_WHITELIST = [
     "http://dbpedia.org/ontology/director",
     "http://dbpedia.org/ontology/starring",
@@ -27,7 +28,7 @@ class JSONRetrieve:
         self.output_filename = output_filename
         self.n_film = n_film
 
-    # conserviamo dell'abstract solo il primo paragrafo
+    # conserviamo dell'abstract solo il primo paragrafo per semplicità computazionale
     def get_first_paragraph(self,full_text):
         if not full_text: return ""
         paragraphs = full_text.split('\n')
@@ -37,7 +38,7 @@ class JSONRetrieve:
 
 
     def get_short_name(self,uri_string):
-        """Converte un URI completo nel formato con prefisso (es. dbo:, dbr:)"""
+        # Converte un URI completo nel formato con prefisso (es. dbo:, dbr:)
         if not isinstance(uri_string, str):
             return ""
 

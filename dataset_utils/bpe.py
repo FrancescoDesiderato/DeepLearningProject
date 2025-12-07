@@ -24,7 +24,7 @@ class BPECustom:
         # il `unk_token` è il token che verrà usato se incontra qualcosa di sconosciuto
         tokenizer = Tokenizer(BPE(unk_token="<UNK>"))
 
-        # imposta un "pre-tokenizer" che divide il testo in parole basandosi sugli spazi
+        # imposta un "pre-tokenizer" che divide il testo in parole basandosi sugli spazi e underscore
         if self.underscoreRemoval:
             tokenizer.pre_tokenizer = Sequence([
                 Split(pattern="_", behavior="removed"),

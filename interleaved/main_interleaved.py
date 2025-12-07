@@ -5,6 +5,12 @@ from utils.evaluation import run_test_evaluation
 from utils.train import train_model
 from model_interleaved import NanoSocratesTransformerInterleaved
 
+"""
+
+ MAIN APPOSITO PER IL MODELLO TRANSFORMER CON INTERLEAVED ATTENTION
+
+"""
+
 csv_file = "../150_dataset/processed_samples_150.csv"
 tokenizer_path = "../tokenizer.json"
 weight_path = "../models/nanosocrates_transformer_interleaved_444_150(1).pkl"

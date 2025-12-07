@@ -68,6 +68,7 @@ def greedy_decode(model, src, tokenizer, max_len=128, device='cuda', top_k=False
 def run_validation(model, val_loader, tokenizer, device, num_examples=5):
     """
     Validazione con greedy decoding.
+    La loss viene calcolata con teacher forcing mentre gli esempi vengono mostrati applicando il greedy decoding.
     """
     model.eval()
     val_loss = 0
@@ -171,20 +172,20 @@ def train_model(model, train_loader, val_loader, num_epochs, device, tokenizer, 
         avg_loss = total_loss / len(train_loader)
         print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {avg_loss:.4f}")
 
-        # validation con greedy decoding
+        # validation
         if (epoch + 1) % 5 == 0:
             avg_val_loss = run_validation(model, val_loader, tokenizer, device)
-            torch.save(model.state_dict(), "nanosocrates_transformer.pkl")
+            torch.save(model.state_dict(), "nanosocrates_transformer.pkl") # Checkpoint periodico dei pesi
 
         if scheduler_flag:
             scheduler.step()
         model.train()
 
 
-def overfit_single_batch(model, train_loader, device, tokenizer, num_iterations=200):
-    """
+"""def overfit_single_batch(model, train_loader, device, tokenizer, num_iterations=200):
+    
     Sanity check: testa se il modello può fare overfit su un singolo batch
-    """
+    
     print("\n" + "=" * 60)
     print("SANITY CHECK: OVERFITTING SU SINGOLO BATCH")
     print("=" * 60)
@@ -254,4 +255,4 @@ def overfit_single_batch(model, train_loader, device, tokenizer, num_iterations=
     else:
         print("SANITY CHECK FALLITO: Il modello non riesce a fare overfit")
     print("=" * 60)
-    return final_loss < 0.1
+    return final_loss < 0.1"""

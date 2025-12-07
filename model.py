@@ -30,7 +30,7 @@ class NanoSocratesTransformer(nn.Module):
             num_decoder_layers=num_decoder_layers,
             dim_feedforward=ffn_hid_dim,
             dropout=dropout,
-            batch_first=False  # PyTorch di default usa [seq_len, batch_size, dim]
+            batch_first=False
         )
 
 

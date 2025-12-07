@@ -19,27 +19,27 @@ class DatasetConstruction:
         self.n_film = n_film
 
     def pipeline(self):
-        #1-STEP: ENDPOINT
+        #1-ENDPOINT: Estrazione URI
         output_filename_uri = "dataset_utils/outputs/film_uris.txt"
         endpointClass = Endpoint(self.page_size,output_filename_uri)
         endpointClass.compute()
 
-        #2-STEP: JSON RETRIEVE
+        #2-JSON RETRIEVE: Estrazione info dagli URI
         output_filename_json = "dataset_utils/outputs/final_paired_dataset.json"
         jsonRetrieveClass = JSONRetrieve(self.test_enable, output_filename_uri,output_filename_json, self.n_film)
         jsonRetrieveClass.compute()
 
-        #3-STEP: CORPUS
+        #3-CORPUS: Creazione del corpus dai JSON
         corpus_filename = "dataset_utils/outputs/corpus.txt"
         corpusClass = Corpus(output_filename_json,corpus_filename)
         corpusClass.compute()
 
-        #4-BPE
+        #4-BPE: Tokenizzazione del Corpus
         tokenizer_path = "tokenizer.json"
         bpeCustomClass = BPECustom(self.underscoreRemoval, corpus_filename, tokenizer_path, self.VOCAB_SIZE)
         tokenizer = bpeCustomClass.compute()
 
-        #5-DATASET
+        #5-DATASET: Divisione in task e creazione del dataset
         csv_filename = "processed_samples.csv"
         datasetFormattingClass = DatasetFormatting(output_filename_json, tokenizer_path, csv_filename,
                                                    self.MAX_LENGTH, self.BATCH_SIZE, self.full_balancing)

@@ -24,7 +24,7 @@ dataset_created = True      # TRUE se il dataset è già stato creato e salvato 
 enable_mlm = False          # TRUE se si vuole abilitare il Masked Language Modeling durante l'addestramento
 mlm_trained = False         # TRUE se si vuole caricare un modello MLM già addestrato
 scheduler_flag = True       # TRUE se si vuole abilitare il learning rate scheduler
-overfit_test = False        # TRUE se si vuole fare un overfit test su un singolo batch
+#overfit_test = False        # TRUE se si vuole fare un overfit test su un singolo batch
 test_flag = True            # TRUE se si vuole eseguire la valutazione sul test set
 model_training = False      # TRUE se si vuole addestrare il modello, FALSE se si vuole caricare un modello pre-addestrato
 NUM_EPOCHS = 150            # Epoche di addestramento
@@ -40,6 +40,7 @@ NUM_ENCODER_LAYERS = 4      # Numero di layer nell'encoder
 NUM_DECODER_LAYERS = 4      # Numero di layer nel decoder
 FFN_HID_DIM = 256           # Dimensione del layer nascosto nella Feed-Forward Network
 DROPOUT = 0.3               # Dropout rate
+
 weight_path = "nanosocrates_transformer_150_wd.pkl" # Percorso del modello pre-addestrato
 
 if __name__ == '__main__':
@@ -51,12 +52,12 @@ if __name__ == '__main__':
                                       VOCAB_SIZE, MAX_LENGTH, BATCH_SIZE, full_balancing, n_film)
         _, train_dataset, val_dataset, test_dataset = dataset.pipeline()
 
-
+    # Carichiamo il tokenizer creato precedentemente
     tokenizer = PreTrainedTokenizerFast(tokenizer_file=tokenizer_path)
+    # Retrieve dell'index del token PAD all'interno del tokenizer, necessario per il transformer
     PAD_IDX = tokenizer.convert_tokens_to_ids("<PAD>")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(device)
 
     if model_training:
 
@@ -73,11 +74,11 @@ if __name__ == '__main__':
         model.embedding.padding_idx = PAD_IDX
         model.to(device)
 
-        if overfit_test:
+        """if overfit_test:
             sanity_passed = overfit_single_batch(model, train_dataset, device, tokenizer)
             if not sanity_passed:
                 print("Sanity check fallito.")
-                exit(1)
+                exit(1)"""
 
         if enable_mlm:
 

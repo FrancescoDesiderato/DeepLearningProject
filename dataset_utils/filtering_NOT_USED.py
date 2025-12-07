@@ -8,9 +8,15 @@ PIPELINE:
 
 Eliminare i film con caratteri speciali
 
-Eliminare ciò che è scritto in parentesi nel text(solitamente c'è il titolo in lingua originale)
+Eliminare testi in parentesi (con caratteri speciali o di un altro alfabeto)
+
+Portare a forma base le lettere accentate
 
 Normalizzazione utf8
+"""
+
+"""
+NON UTILIZZATO NEL MAIN PERCHE' IL MODELLO RISULTA FUNZIONARE MEGLIO SENZA 
 """
 
 def to_ascii_equivalent(text):
