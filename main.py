@@ -24,7 +24,6 @@ dataset_created = True      # TRUE se il dataset è già stato creato e salvato 
 enable_mlm = False          # TRUE se si vuole abilitare il Masked Language Modeling durante l'addestramento
 mlm_trained = False         # TRUE se si vuole caricare un modello MLM già addestrato
 scheduler_flag = True       # TRUE se si vuole abilitare il learning rate scheduler
-#overfit_test = False        # TRUE se si vuole fare un overfit test su un singolo batch
 test_flag = True            # TRUE se si vuole eseguire la valutazione sul test set
 model_training = False      # TRUE se si vuole addestrare il modello, FALSE se si vuole caricare un modello pre-addestrato
 NUM_EPOCHS = 150            # Epoche di addestramento
@@ -73,12 +72,6 @@ if __name__ == '__main__':
         )
         model.embedding.padding_idx = PAD_IDX
         model.to(device)
-
-        """if overfit_test:
-            sanity_passed = overfit_single_batch(model, train_dataset, device, tokenizer)
-            if not sanity_passed:
-                print("Sanity check fallito.")
-                exit(1)"""
 
         if enable_mlm:
 
