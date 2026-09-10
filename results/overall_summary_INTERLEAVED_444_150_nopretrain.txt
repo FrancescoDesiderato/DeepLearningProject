@@ -1,0 +1,25 @@
+Risultati interleaved 444 not pretrained 150
+OVERALL EVALUATION SUMMARY
+==================================================
+
+Text2RDF:
+  precision: 0.618182
+  recall: 0.425000
+  f1: 0.503704
+
+MASK:
+  accuracy: 0.333333
+  accuracy_wrt_all: 0.916667
+
+RDF2Text:
+  bleu: 0.197254
+  meteor: 0.389357
+  rouge1: 0.443017
+  rouge2: 0.332005
+  rougeL: 0.411268
+  rougeLsum: 0.414623
+
+CONTINUERDF:
+  precision: 0.388889
+  recall: 0.333333
+  f1: 0.358974

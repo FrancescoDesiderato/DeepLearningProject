@@ -1,0 +1,25 @@
+Risultati 100 warm 444 256 no pretrain balanced
+OVERALL EVALUATION SUMMARY
+==================================================
+
+CONTINUERDF:
+  precision: 0.466667
+  recall: 0.466667
+  f1: 0.466667
+
+MASK:
+  accuracy: 0.125000
+  accuracy_wrt_all: 1.000000
+
+RDF2Text:
+  bleu: 0.428906
+  meteor: 0.579713
+  rouge1: 0.591147
+  rouge2: 0.535848
+  rougeL: 0.575598
+  rougeLsum: 0.572828
+
+Text2RDF:
+  precision: 0.439024
+  recall: 0.352941
+  f1: 0.391304

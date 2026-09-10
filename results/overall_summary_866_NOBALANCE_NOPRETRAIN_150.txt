@@ -1,0 +1,24 @@
+OVERALL EVALUATION SUMMARY
+==================================================
+
+Text2RDF:
+  precision: 0.606061
+  recall: 0.500000
+  f1: 0.547945
+
+MASK:
+  accuracy: 0.500000
+  accuracy_wrt_all: 1.000000
+
+RDF2Text:
+  bleu: 0.297074
+  meteor: 0.491813
+  rouge1: 0.538360
+  rouge2: 0.430956
+  rougeL: 0.500325
+  rougeLsum: 0.501479
+
+CONTINUERDF:
+  precision: 0.294118
+  recall: 0.238095
+  f1: 0.263158

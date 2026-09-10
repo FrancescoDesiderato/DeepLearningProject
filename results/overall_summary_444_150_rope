@@ -1,0 +1,27 @@
+RISULTATI 150 444 no pretrain unbalanced ROPE embeddings
+OVERALL EVALUATION SUMMARY
+==================================================
+
+Text2RDF:
+    precision: 0.140625
+    recall: 0.085714
+    f1: 0.106509
+
+MASK:
+    accuracy: 0.082645
+    accuracy_wrt_all: 0.471074
+
+RDF2Text:
+    bleu: 0.039844
+    meteor: 0.142634
+    rouge1: 0.199469
+    rouge2: 0.095712
+    rougeL: 0.171947
+    rougeLsum: 0.170760
+
+CONTINUERDF:
+    precision: 0.215686
+    recall: 0.167756
+    f1: 0.188725
+
+
